@@ -1,0 +1,119 @@
+<?php
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+function isLoggedIn() {
+    return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
+}
+
+function checkAccess($allowedRoles = []) {
+    if (!isLoggedIn()) {
+        header("Location: /simak_app/public/index.php?error=session_expired");
+        exit();
+    }
+    
+    if (!empty($allowedRoles) && !in_array($_SESSION['role'], $allowedRoles)) {
+        http_response_code(403);
+        
+        $role = $_SESSION['role'];
+        $dashboard = match($role) {
+            'admin' => '/simak_app/public/admin/dashboard.php',
+            'dosen' => '/simak_app/public/dosen/dashboard.php',
+            'mahasiswa' => '/simak_app/public/mahasiswa/dashboard.php',
+            default => '/simak_app/public/index.php'
+        };
+        
+        echo "<!DOCTYPE html>
+        <html>
+        <head>
+            <title>Akses Ditolak</title>
+            <style>
+                body { font-family: Arial; text-align: center; padding: 50px; background: #f8f9fa; }
+                .container { max-width: 500px; margin: 0 auto; background: #fff; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                h1 { color: #e74c3c; }
+                .role-badge { display: inline-block; padding: 4px 15px; border-radius: 20px; color: #fff; font-weight: bold; }
+                .role-admin { background: #e74c3c; }
+                .role-dosen { background: #3498db; }
+                .role-mahasiswa { background: #2ecc71; }
+                .btn { display: inline-block; padding: 10px 25px; background: #3498db; color: #fff; text-decoration: none; border-radius: 5px; margin-top: 15px; }
+                .btn:hover { background: #2980b9; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <h1>⛔ Akses Ditolak</h1>
+                <p>Anda tidak memiliki izin untuk mengakses halaman ini.</p>
+                <p>
+                    Role Anda: 
+                    <span class='role-badge role-" . htmlspecialchars($role) . "'>
+                        " . ucfirst(htmlspecialchars($role)) . "
+                    </span>
+                </p>
+                <p><a href='" . $dashboard . "' class='btn'>← Kembali ke Dashboard</a></p>
+            </div>
+        </body>
+        </html>";
+        exit();
+    }
+}
+
+function getCurrentUser($pdo) {
+    if (!isset($_SESSION['user_id'])) {
+        return null;
+    }
+    
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
+        $stmt->execute([$_SESSION['user_id']]);
+        return $stmt->fetch();
+    } catch (PDOException $e) {
+        return null;
+    }
+}
+
+function getUserRole() {
+    return $_SESSION['role'] ?? null;
+}
+
+function getUserName() {
+    return $_SESSION['nama'] ?? 'Pengguna';
+}
+
+function redirectWithMessage($url, $message, $type = 'success') {
+    $_SESSION['flash_message'] = $message;
+    $_SESSION['flash_type'] = $type;
+    header("Location: " . $url);
+    exit();
+}
+
+function getFlashMessage() {
+    $message = $_SESSION['flash_message'] ?? null;
+    $type = $_SESSION['flash_type'] ?? 'info';
+    unset($_SESSION['flash_message'], $_SESSION['flash_type']);
+    
+    if ($message) {
+        return ['message' => $message, 'type' => $type];
+    }
+    return null;
+}
+
+function redirectToDashboard() {
+    if (!isLoggedIn()) {
+        header("Location: /simak_app/public/index.php");
+        exit();
+    }
+    
+    $role = $_SESSION['role'];
+    $redirect = match($role) {
+        'admin' => '/simak_app/public/admin/dashboard.php',
+        'dosen' => '/simak_app/public/dosen/dashboard.php',
+        'mahasiswa' => '/simak_app/public/mahasiswa/dashboard.php',
+        default => '/simak_app/public/logout.php'
+    };
+    
+    header("Location: " . $redirect);
+    exit();
+}
+?>

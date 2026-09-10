@@ -1,0 +1,109 @@
+<?php
+
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../config/session.php';
+require_once __DIR__ . '/../../controllers/DosenController.php';
+
+checkAccess(['dosen']);
+
+$page_title = 'Broadcast Kelas';
+
+$stmt = $pdo->prepare("SELECT id FROM dosen WHERE user_id = ?");
+$stmt->execute([$_SESSION['user_id']]);
+$dosen = $stmt->fetch();
+
+if (!$dosen) {
+    redirectWithMessage('/simak_app/public/logout.php', 'Data dosen tidak ditemukan', 'error');
+}
+
+$controller = new DosenController($pdo, $dosen['id']);
+
+$matakuliah = $controller->getMatakuliahDosen();
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'send') {
+    $result = $controller->sendBroadcast($_POST);
+    if ($result['success']) {
+        redirectWithMessage('/simak_app/public/dosen/broadcast.php', 'Pengumuman berhasil dikirim!', 'success');
+    } else {
+        redirectWithMessage('/simak_app/public/dosen/broadcast.php', 'Gagal: ' . $result['message'], 'error');
+    }
+}
+
+$history = $controller->getBroadcastHistory();
+
+include __DIR__ . '/../../includes/header.php';
+?>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
+    <div>
+        <div class="table-container">
+            <h3>📢 Kirim Pengumuman</h3>
+            <form method="POST">
+                <input type="hidden" name="action" value="send">
+                
+                <div class="form-group">
+                    <label>Judul Pengumuman</label>
+                    <input type="text" name="judul" required placeholder="Masukkan judul pengumuman">
+                </div>
+                
+                <div class="form-group">
+                    <label>Target</label>
+                    <select name="target_role" required>
+                        <option value="all">📢 Semua Pengguna</option>
+                        <option value="mahasiswa">👨‍🎓 Mahasiswa</option>
+                        <option value="dosen">👨‍🏫 Dosen</option>
+                        <option value="admin">👤 Admin</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Prioritas</label>
+                    <select name="priority">
+                        <option value="low">🟢 Rendah</option>
+                        <option value="medium" selected>🟡 Sedang</option>
+                        <option value="high">🔴 Tinggi</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Pesan</label>
+                    <textarea name="pesan" rows="5" required placeholder="Tulis pesan pengumuman..."></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block">📤 Kirim Pengumuman</button>
+            </form>
+        </div>
+    </div>
+    
+    <div>
+        <div class="table-container">
+            <h3>📋 Riwayat Pengumuman</h3>
+            
+            <?php if (empty($history)): ?>
+                <p style="text-align: center; color: #7f8c8d; padding: 20px;">
+                    Belum ada pengumuman yang dikirim
+                </p>
+            <?php else: ?>
+                <?php foreach ($history as $h): ?>
+                    <div style="padding: 12px 15px; border-bottom: 1px solid #e9ecef;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <strong><?= htmlspecialchars($h['judul']) ?></strong>
+                            <small style="color: #7f8c8d;">
+                                <?= date('d-m-Y H:i', strtotime($h['created_at'])) ?>
+                            </small>
+                        </div>
+                        <div style="font-size: 13px; color: #555; margin: 5px 0;">
+                            <?= htmlspecialchars(substr($h['pesan'], 0, 80)) ?>...
+                        </div>
+                        <div style="display: flex; gap: 10px; font-size: 12px; color: #7f8c8d;">
+                            <span>🎯 Target: <?= ucfirst($h['target_role']) ?></span>
+                            <span>⭐ Prioritas: <?= ucfirst($h['priority']) ?></span>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<?php include __DIR__ . '/../../includes/footer.php'; ?>
