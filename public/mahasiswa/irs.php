@@ -65,7 +65,7 @@ include __DIR__ . '/../../includes/header.php';
     <div>
         <div class="table-container">
             <div class="table-header">
-                <h3>📋 IRS - Semester <?= $semester ?></h3>
+                <h3><i class="fas fa-clipboard-list"></i> IRS - Semester <?= $semester ?></h3>
                 <div>
                     <select onchange="window.location.href='?semester='+this.value" style="padding: 8px 14px; border: 1px solid #ddd; border-radius: 6px;">
                         <?php for ($s = 1; $s <= 8; $s++): ?>
@@ -75,7 +75,7 @@ include __DIR__ . '/../../includes/header.php';
                         <?php endfor; ?>
                     </select>
                     <?php if ($status_irs === 'pending' && $total_sks > 0): ?>
-                        <button class="btn btn-success" onclick="printIRS()">🖨️ Cetak IRS</button>
+                        <button class="btn btn-success" onclick="printIRS()"><i class="fas fa-print"></i> Cetak IRS</button>
                     <?php endif; ?>
                 </div>
             </div>
@@ -87,11 +87,11 @@ include __DIR__ . '/../../includes/header.php';
                         <?= ucfirst($status_irs) ?>
                     </span>
                     <?php if ($status_irs === 'pending'): ?>
-                        <small style="color: #7f8c8d; margin-left: 10px;">⏳ Menunggu validasi admin</small>
+                        <small style="color: #7f8c8d; margin-left: 10px;"><i class="fas fa-hourglass-half"></i> Menunggu validasi admin</small>
                     <?php elseif ($status_irs === 'approved'): ?>
-                        <small style="color: #27ae60; margin-left: 10px;">✅ Telah divalidasi</small>
+                        <small style="color: #27ae60; margin-left: 10px;"><i class="fas fa-check-circle"></i> Telah divalidasi</small>
                     <?php elseif ($status_irs === 'rejected'): ?>
-                        <small style="color: #e74c3c; margin-left: 10px;">❌ Ditolak</small>
+                        <small style="color: #e74c3c; margin-left: 10px;"><i class="fas fa-times-circle"></i> Ditolak</small>
                     <?php endif; ?>
                 </div>
             <?php endif; ?>
@@ -99,7 +99,7 @@ include __DIR__ . '/../../includes/header.php';
             <div style="margin-bottom: 15px; padding: 10px 15px; background: #f8f9fa; border-radius: 6px;">
                 <strong>Total SKS:</strong> <?= $total_sks ?> / <?= $max_sks ?> SKS
                 <?php if ($total_sks > $max_sks): ?>
-                    <span style="color: #e74c3c; margin-left: 10px;">⚠️ Melebihi batas maksimal!</span>
+                    <span style="color: #e74c3c; margin-left: 10px;"><i class="fas fa-exclamation-triangle"></i> Melebihi batas maksimal!</span>
                 <?php endif; ?>
             </div>
             
@@ -131,7 +131,7 @@ include __DIR__ . '/../../includes/header.php';
                                 </td>
                                 <td>
                                     <?php if ($irs['status'] === 'pending'): ?>
-                                        <button class="btn btn-danger btn-sm btn-delete" onclick="deleteIRS(<?= $irs['id'] ?>)">🗑️</button>
+                                        <button class="btn btn-danger btn-sm btn-delete" onclick="deleteIRS(<?= $irs['id'] ?>)"><i class="fas fa-trash-alt"></i></button>
                                     <?php else: ?>
                                         <span style="color: #7f8c8d; font-size: 12px;">-</span>
                                     <?php endif; ?>
@@ -152,23 +152,23 @@ include __DIR__ . '/../../includes/header.php';
     
     <div>
         <div class="table-container">
-            <h3>➕ Tambah Mata Kuliah</h3>
+            <h3><i class="fas fa-plus-circle"></i> Tambah Mata Kuliah</h3>
             <p style="color: #7f8c8d; font-size: 13px; margin-bottom: 15px;">
                 Pilih mata kuliah yang tersedia untuk semester <?= $semester ?>
             </p>
             
             <?php if ($status_irs === 'pending'): ?>
                 <div style="padding: 15px; background: #fff3cd; border-radius: 6px; color: #856404; margin-bottom: 15px;">
-                    ⏳ IRS sedang dalam proses validasi. Tidak dapat menambah/mengubah mata kuliah.
+                    <i class="fas fa-hourglass-half"></i> IRS sedang dalam proses validasi. Tidak dapat menambah/mengubah mata kuliah.
                 </div>
             <?php elseif ($status_irs === 'approved'): ?>
                 <div style="padding: 15px; background: #d4edda; border-radius: 6px; color: #155724; margin-bottom: 15px;">
-                    ✅ IRS telah divalidasi. Tidak dapat menambah/mengubah mata kuliah.
+                    <i class="fas fa-check-circle"></i> IRS telah divalidasi. Tidak dapat menambah/mengubah mata kuliah.
                 </div>
             <?php else: ?>
                 <?php if ($total_sks >= $max_sks): ?>
                     <div style="padding: 15px; background: #f8d7da; border-radius: 6px; color: #721c24; margin-bottom: 15px;">
-                        ⚠️ SKS sudah mencapai batas maksimal (<?= $max_sks ?> SKS).
+                        <i class="fas fa-exclamation-triangle"></i> SKS sudah mencapai batas maksimal (<?= $max_sks ?> SKS).
                     </div>
                 <?php endif; ?>
                 
@@ -201,7 +201,7 @@ include __DIR__ . '/../../includes/header.php';
         </div>
         
         <div class="table-container" style="margin-top: 15px;">
-            <h4>📌 Informasi</h4>
+            <h4><i class="fas fa-info-circle"></i> Informasi</h4>
             <ul style="list-style: none; padding: 0; font-size: 13px; color: #555;">
                 <li style="padding: 5px 0;">• Maksimal SKS: <strong><?= $max_sks ?> SKS</strong></li>
                 <li style="padding: 5px 0;">• Status harus <strong>pending</strong> untuk dapat mengubah</li>

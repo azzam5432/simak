@@ -51,7 +51,7 @@ echo "</div>";
 echo "<div class='test-section'>";
 echo "<h3>2. Database Tables</h3>";
 
-$tables = ['users', 'mahasiswa', 'dosen', 'courses', 'irs', 'presensi', 'tasks', 'task_submissions', 'grades', 'announcements', 'announcement_reads'];
+$tables = ['users', 'mahasiswa', 'dosen', 'courses', 'irs', 'presensi', 'presensi_sessions', 'tasks', 'task_submissions', 'grades', 'announcements', 'announcement_reads'];
 $table_results = [];
 
 foreach ($tables as $table) {

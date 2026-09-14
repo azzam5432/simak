@@ -44,7 +44,7 @@ include __DIR__ . '/../../includes/header.php';
     <div>
         <div class="table-container">
             <div class="table-header">
-                <h3>📋 KHS - Semester <?= $semester ?? 'Semua' ?></h3>
+                <h3><i class="fas fa-clipboard-list"></i> KHS - Semester <?= $semester ?? 'Semua' ?></h3>
                 <div>
                     <select onchange="window.location.href='?semester='+this.value" style="padding: 8px 14px; border: 1px solid #ddd; border-radius: 6px;">
                         <option value="">-- Semua Semester --</option>
@@ -123,25 +123,25 @@ include __DIR__ . '/../../includes/header.php';
     
     <div>
         <div class="table-container" style="margin-bottom: 20px;">
-            <h3 style="text-align: center;">🏆 IPK</h3>
+            <h3 style="text-align: center;"><i class="fas fa-trophy"></i> IPK</h3>
             <div style="text-align: center; padding: 10px;">
                 <div style="font-size: 48px; font-weight: 700; color: <?= $ipk_total >= 3.5 ? '#2ecc71' : ($ipk_total >= 2.5 ? '#f39c12' : '#e74c3c') ?>">
                     <?= number_format($ipk_total, 2) ?>
                 </div>
                 <div style="color: #7f8c8d; font-size: 14px;">
                     <?php 
-                    if ($ipk_total >= 3.5) echo '🌟 Cumlaude';
-                    elseif ($ipk_total >= 3.0) echo '👍 Sangat Baik';
-                    elseif ($ipk_total >= 2.5) echo '📈 Baik';
-                    elseif ($ipk_total >= 2.0) echo '📊 Cukup';
-                    else echo '📉 Perlu Perbaikan';
+                    if ($ipk_total >= 3.5) echo '<i class="fas fa-award"></i> Cumlaude';
+                    elseif ($ipk_total >= 3.0) echo '<i class="fas fa-thumbs-up"></i> Sangat Baik';
+                    elseif ($ipk_total >= 2.5) echo '<i class="fas fa-chart-line"></i> Baik';
+                    elseif ($ipk_total >= 2.0) echo '<i class="fas fa-chart-bar"></i> Cukup';
+                    else echo '<i class="fas fa-chart-line"></i> Perlu Perbaikan';
                     ?>
                 </div>
             </div>
         </div>
         
         <div class="table-container">
-            <h3>📊 Detail per Semester</h3>
+            <h3><i class="fas fa-chart-bar"></i> Detail per Semester</h3>
             <?php if (empty($detail_ipk)): ?>
                 <p style="color: #7f8c8d; text-align: center; padding: 15px;">
                     Belum ada data IPK

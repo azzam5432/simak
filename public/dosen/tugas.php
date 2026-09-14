@@ -67,7 +67,7 @@ include __DIR__ . '/../../includes/header.php';
 
 <div class="table-container">
     <div class="table-header">
-        <h3>📄 Daftar Tugas</h3>
+        <h3><i class="fas fa-file-alt"></i> Daftar Tugas</h3>
         <button class="btn btn-primary" onclick="document.getElementById('modalTambah').style.display='block'">
             + Buat Tugas Baru
         </button>
@@ -92,7 +92,7 @@ include __DIR__ . '/../../includes/header.php';
             <tbody>
                 <?php foreach ($tugas as $t): 
                     $is_expired = strtotime($t['deadline']) < time();
-                    $status = $is_expired ? '⏰ Expired' : '🟢 Aktif';
+                    $status = $is_expired ? '<i class="fas fa-clock"></i> Expired' : '<i class="fas fa-circle"></i> Aktif';
                     $status_color = $is_expired ? '#e74c3c' : '#2ecc71';
                 ?>
                     <tr>
@@ -106,8 +106,8 @@ include __DIR__ . '/../../includes/header.php';
                             </span>
                         </td>
                         <td>
-                            <a href="?detail=<?= $t['id'] ?>" class="btn btn-primary btn-sm">📋 Detail</a>
-                            <button class="btn btn-danger btn-sm btn-delete" onclick="deleteTugas(<?= $t['id'] ?>)">🗑️</button>
+                            <a href="?detail=<?= $t['id'] ?>" class="btn btn-primary btn-sm"><i class="fas fa-list-ul"></i> Detail</a>
+                            <button class="btn btn-danger btn-sm btn-delete" onclick="deleteTugas(<?= $t['id'] ?>)"><i class="fas fa-trash-alt"></i></button>
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -119,8 +119,8 @@ include __DIR__ . '/../../includes/header.php';
 <?php if ($detail_id && $detail_tugas): ?>
 <div class="table-container" style="margin-top: 20px;">
     <div class="table-header">
-        <h3>📋 Detail Tugas: <?= htmlspecialchars($detail_tugas['judul']) ?></h3>
-        <a href="?detail=0" class="btn btn-secondary btn-sm">✕ Tutup</a>
+        <h3><i class="fas fa-list-ul"></i> Detail Tugas: <?= htmlspecialchars($detail_tugas['judul']) ?></h3>
+        <a href="?detail=0" class="btn btn-secondary btn-sm"><i class="fas fa-times"></i> Tutup</a>
     </div>
     
     <div style="padding: 10px 0;">
@@ -130,7 +130,7 @@ include __DIR__ . '/../../includes/header.php';
         <p><strong>Bobot Nilai:</strong> <?= $detail_tugas['bobot_nilai'] ?>%</p>
     </div>
     
-    <h4 style="margin-top: 15px;">📥 Submission Mahasiswa</h4>
+    <h4 style="margin-top: 15px;"><i class="fas fa-download"></i> Submission Mahasiswa</h4>
     <?php if (empty($detail_submissions)): ?>
         <p style="color: #7f8c8d; padding: 15px;">Belum ada submission</p>
     <?php else: ?>
@@ -163,7 +163,7 @@ include __DIR__ . '/../../includes/header.php';
                         </td>
                         <td>
                             <?php if ($sub['status'] !== 'draft'): ?>
-                                <button class="btn btn-primary btn-sm" onclick="nilaiSubmission(<?= $sub['id'] ?>, <?= $detail_id ?>)">📝 Nilai</button>
+                                <button class="btn btn-primary btn-sm" onclick="nilaiSubmission(<?= $sub['id'] ?>, <?= $detail_id ?>)"><i class="fas fa-edit"></i> Nilai</button>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -177,7 +177,7 @@ include __DIR__ . '/../../includes/header.php';
 <div id="modalTambah" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 999;">
     <div class="modal-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);"></div>
     <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
-        <h3 style="margin-bottom: 20px;">📄 Buat Tugas Baru</h3>
+        <h3 style="margin-bottom: 20px;"><i class="fas fa-plus-circle"></i> Buat Tugas Baru</h3>
         <form method="POST">
             <input type="hidden" name="action" value="create">
             
@@ -220,7 +220,7 @@ include __DIR__ . '/../../includes/header.php';
 <div id="modalNilai" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 999;">
     <div class="modal-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);"></div>
     <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; padding: 30px; border-radius: 12px; max-width: 400px; width: 90%;">
-        <h3 style="margin-bottom: 15px;">📝 Beri Nilai</h3>
+        <h3 style="margin-bottom: 15px;"><i class="fas fa-edit"></i> Beri Nilai</h3>
         <form method="POST">
             <input type="hidden" name="action" value="nilai_submission">
             <input type="hidden" name="submission_id" id="nilaiSubmissionId">

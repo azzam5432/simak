@@ -37,7 +37,7 @@ include __DIR__ . '/../../includes/header.php';
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
     <div>
         <div class="table-container">
-            <h3>📢 Kirim Pengumuman</h3>
+            <h3><i class="fas fa-bullhorn"></i> Kirim Pengumuman</h3>
             <form method="POST">
                 <input type="hidden" name="action" value="send">
                 
@@ -49,19 +49,19 @@ include __DIR__ . '/../../includes/header.php';
                 <div class="form-group">
                     <label>Target</label>
                     <select name="target_role" required>
-                        <option value="all">📢 Semua Pengguna</option>
-                        <option value="mahasiswa">👨‍🎓 Mahasiswa</option>
-                        <option value="dosen">👨‍🏫 Dosen</option>
-                        <option value="admin">👤 Admin</option>
+                        <option value="all">Semua Pengguna</option>
+                        <option value="mahasiswa">Mahasiswa</option>
+                        <option value="dosen">Dosen</option>
+                        <option value="admin">Admin</option>
                     </select>
                 </div>
                 
                 <div class="form-group">
                     <label>Prioritas</label>
                     <select name="priority">
-                        <option value="low">🟢 Rendah</option>
-                        <option value="medium" selected>🟡 Sedang</option>
-                        <option value="high">🔴 Tinggi</option>
+                        <option value="low">Rendah</option>
+                        <option value="medium" selected>Sedang</option>
+                        <option value="high">Tinggi</option>
                     </select>
                 </div>
                 
@@ -70,14 +70,14 @@ include __DIR__ . '/../../includes/header.php';
                     <textarea name="pesan" rows="5" required placeholder="Tulis pesan pengumuman..."></textarea>
                 </div>
                 
-                <button type="submit" class="btn btn-primary btn-block">📤 Kirim Pengumuman</button>
+                <button type="submit" class="btn btn-primary btn-block"><i class="fas fa-paper-plane"></i> Kirim Pengumuman</button>
             </form>
         </div>
     </div>
     
     <div>
         <div class="table-container">
-            <h3>📋 Riwayat Pengumuman</h3>
+            <h3><i class="fas fa-history"></i> Riwayat Pengumuman</h3>
             
             <?php if (empty($history)): ?>
                 <p style="text-align: center; color: #7f8c8d; padding: 20px;">
@@ -96,8 +96,8 @@ include __DIR__ . '/../../includes/header.php';
                             <?= htmlspecialchars(substr($h['pesan'], 0, 80)) ?>...
                         </div>
                         <div style="display: flex; gap: 10px; font-size: 12px; color: #7f8c8d;">
-                            <span>🎯 Target: <?= ucfirst($h['target_role']) ?></span>
-                            <span>⭐ Prioritas: <?= ucfirst($h['priority']) ?></span>
+                            <span><i class="fas fa-bullseye"></i> Target: <?= ucfirst($h['target_role']) ?></span>
+                            <span><i class="fas fa-star"></i> Prioritas: <?= ucfirst($h['priority']) ?></span>
                         </div>
                     </div>
                 <?php endforeach; ?>

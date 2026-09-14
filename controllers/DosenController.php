@@ -112,7 +112,7 @@ class DosenController {
     
     public function getMahasiswaPerKelas($course_id) {
         $stmt = $this->pdo->prepare("
-            SELECT u.*, m.nim, m.program_studi, m.semester
+            SELECT m.id AS mahasiswa_id, u.nama, m.nim, m.program_studi, m.semester
             FROM irs
             JOIN mahasiswa m ON irs.mahasiswa_id = m.id
             JOIN users u ON m.user_id = u.id
@@ -202,23 +202,113 @@ class DosenController {
         }
     }
     
+    // ============================================
+    // SESI PRESENSI - VERSI DATABASE (HANYA SATU VERSI)
+    // ============================================
+    
+    /**
+     * Buka sesi presensi - SIMPAN KE DATABASE
+     */
     public function bukaSesiPresensi($course_id) {
-        $_SESSION['presensi_sesi'] = [
-            'course_id' => $course_id,
-            'kode' => rand(100000, 999999),
-            'waktu_mulai' => date('Y-m-d H:i:s'),
-            'aktif' => true
-        ];
-        return ['success' => true, 'kode' => $_SESSION['presensi_sesi']['kode']];
+        try {
+            // Cek apakah sudah ada sesi aktif untuk course ini
+            $stmt = $this->pdo->prepare("
+                SELECT id FROM presensi_sessions 
+                WHERE course_id = ? AND is_active = 1
+            ");
+            $stmt->execute([$course_id]);
+            
+            if ($stmt->fetch()) {
+                // Tutup sesi lama dulu
+                $stmt = $this->pdo->prepare("
+                    UPDATE presensi_sessions 
+                    SET is_active = 0, waktu_selesai = NOW()
+                    WHERE course_id = ? AND is_active = 1
+                ");
+                $stmt->execute([$course_id]);
+            }
+            
+            // Generate kode 6 digit
+            $kode = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+            
+            // Insert sesi baru
+            $stmt = $this->pdo->prepare("
+                INSERT INTO presensi_sessions (course_id, dosen_id, kode, tanggal, waktu_mulai, is_active)
+                VALUES (?, ?, ?, CURDATE(), NOW(), 1)
+            ");
+            $stmt->execute([$course_id, $this->dosen_id, $kode]);
+            
+            return [
+                'success' => true,
+                'kode' => $kode,
+                'session_id' => $this->pdo->lastInsertId()
+            ];
+        } catch (PDOException $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
     }
     
-    public function tutupSesiPresensi() {
-        unset($_SESSION['presensi_sesi']);
-        return ['success' => true];
+    /**
+     * Tutup sesi presensi - UPDATE DATABASE
+     */
+    public function tutupSesiPresensi($course_id) {
+        try {
+            $stmt = $this->pdo->prepare("
+                UPDATE presensi_sessions 
+                SET is_active = 0, waktu_selesai = NOW()
+                WHERE course_id = ? AND is_active = 1
+            ");
+            $stmt->execute([$course_id]);
+            
+            return ['success' => true, 'affected' => $stmt->rowCount()];
+        } catch (PDOException $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
     }
     
-    public function cekSesiPresensi() {
-        return $_SESSION['presensi_sesi'] ?? null;
+    /**
+     * Cek sesi presensi aktif - DARI DATABASE
+     */
+    public function cekSesiPresensi($course_id = null) {
+        $sql = "
+            SELECT ps.*, c.kode_mk, c.nama_mk
+            FROM presensi_sessions ps
+            JOIN courses c ON ps.course_id = c.id
+            WHERE ps.is_active = 1 
+            AND ps.waktu_mulai > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+        ";
+        $params = [];
+        
+        if ($course_id) {
+            $sql .= " AND ps.course_id = ?";
+            $params[] = $course_id;
+        } else {
+            $sql .= " AND ps.dosen_id = ?";
+            $params[] = $this->dosen_id;
+        }
+        
+        $sql .= " ORDER BY ps.waktu_mulai DESC LIMIT 1";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetch();
+    }
+    
+    /**
+     * Cek semua sesi aktif untuk dosen
+     */
+    public function getAllActiveSessions() {
+        $stmt = $this->pdo->prepare("
+            SELECT ps.*, c.kode_mk, c.nama_mk
+            FROM presensi_sessions ps
+            JOIN courses c ON ps.course_id = c.id
+            WHERE ps.dosen_id = ? 
+                AND ps.is_active = 1
+                AND ps.waktu_mulai > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+            ORDER BY ps.waktu_mulai DESC
+        ");
+        $stmt->execute([$this->dosen_id]);
+        return $stmt->fetchAll();
     }
     
     // ============================================

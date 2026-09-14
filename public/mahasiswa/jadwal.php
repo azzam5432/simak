@@ -33,7 +33,7 @@ include __DIR__ . '/../../includes/header.php';
 
 <div class="table-container">
     <div class="table-header">
-        <h3>📅 Jadwal Kuliah</h3>
+        <h3><i class="fas fa-calendar-alt"></i> Jadwal Kuliah</h3>
         <small style="color: #7f8c8d;">Semester <?= date('Y') ?></small>
     </div>
     
@@ -59,13 +59,13 @@ include __DIR__ . '/../../includes/header.php';
                                 <?= htmlspecialchars($j['nama_mk']) ?>
                             </div>
                             <div style="font-size: 11px; color: #7f8c8d;">
-                                🕐 <?= date('H:i', strtotime($j['jam_mulai'])) ?> - <?= date('H:i', strtotime($j['jam_selesai'])) ?>
+                                <i class="fas fa-clock"></i> <?= date('H:i', strtotime($j['jam_mulai'])) ?> - <?= date('H:i', strtotime($j['jam_selesai'])) ?>
                             </div>
                             <div style="font-size: 11px; color: #7f8c8d;">
-                                👨‍🏫 <?= htmlspecialchars($j['dosen_nama'] ?? '-') ?>
+                                <i class="fas fa-chalkboard-teacher"></i> <?= htmlspecialchars($j['dosen_nama'] ?? '-') ?>
                             </div>
                             <div style="font-size: 11px; color: #7f8c8d;">
-                                📍 <?= htmlspecialchars($j['ruang'] ?? '-') ?>
+                                <i class="fas fa-map-marker-alt"></i> <?= htmlspecialchars($j['ruang'] ?? '-') ?>
                             </div>
                         </div>
                     <?php endforeach; ?>

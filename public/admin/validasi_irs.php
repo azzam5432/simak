@@ -72,29 +72,29 @@ include __DIR__ . '/../../includes/header.php';
 <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
     <div class="stat-card">
         <div class="stat-number" style="color: #f39c12;"><?= $stats['pending'] ?></div>
-        <div class="stat-label">⏳ Pending</div>
+        <div class="stat-label"><i class="fas fa-hourglass-half"></i> Pending</div>
     </div>
     <div class="stat-card">
         <div class="stat-number" style="color: #2ecc71;"><?= $stats['approved'] ?></div>
-        <div class="stat-label">✅ Approved</div>
+        <div class="stat-label"><i class="fas fa-check"></i> Approved</div>
     </div>
     <div class="stat-card">
         <div class="stat-number" style="color: #e74c3c;"><?= $stats['rejected'] ?></div>
-        <div class="stat-label">❌ Rejected</div>
+        <div class="stat-label"><i class="fas fa-times"></i> Rejected</div>
     </div>
 </div>
 
 <div class="table-container">
     <div class="table-header">
-        <h3>⏳ IRS Menunggu Validasi</h3>
+        <h3><i class="fas fa-hourglass-half"></i> IRS Menunggu Validasi</h3>
         <div>
-            <input type="text" id="tableSearch" placeholder="🔍 Cari mahasiswa..." style="padding: 8px 14px; border: 1px solid #ddd; border-radius: 6px;">
+            <input type="text" id="tableSearch" placeholder="Cari mahasiswa..." style="padding: 8px 14px; border: 1px solid #ddd; border-radius: 6px;">
         </div>
     </div>
     
     <?php if (empty($grouped_irs)): ?>
         <div style="text-align: center; padding: 40px; color: #7f8c8d;">
-            <h3>✅ Semua IRS telah divalidasi</h3>
+            <h3><i class="fas fa-check"></i> Semua IRS telah divalidasi</h3>
             <p>Tidak ada IRS yang menunggu persetujuan.</p>
         </div>
     <?php else: ?>
@@ -103,7 +103,7 @@ include __DIR__ . '/../../includes/header.php';
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
                     <div>
                         <h4 style="margin: 0;">
-                            👤 <?= htmlspecialchars($group['mahasiswa_nama']) ?>
+                            <i class="fas fa-user"></i> <?= htmlspecialchars($group['mahasiswa_nama']) ?>
                             <span style="font-weight: normal; font-size: 14px; color: #7f8c8d; margin-left: 10px;">
                                 (<?= htmlspecialchars($group['nim']) ?>)
                             </span>
@@ -115,7 +115,7 @@ include __DIR__ . '/../../includes/header.php';
                             <input type="hidden" name="action" value="approve_all">
                             <input type="hidden" name="mahasiswa_id" value="<?= $group['mahasiswa_id'] ?>">
                             <input type="hidden" name="semester" value="<?= $group['semester'] ?>">
-                            <button type="submit" class="btn btn-success btn-sm">✅ Setujui Semua</button>
+                            <button type="submit" class="btn btn-success btn-sm"><i class="fas fa-check"></i> Setujui Semua</button>
                         </form>
                     </div>
                 </div>
@@ -145,9 +145,9 @@ include __DIR__ . '/../../includes/header.php';
                                     <form method="POST" style="display: inline-block;">
                                         <input type="hidden" name="action" value="approve">
                                         <input type="hidden" name="irs_id" value="<?= $irs['id'] ?>">
-                                        <button type="submit" class="btn btn-success btn-sm">✅ Setuju</button>
+                                        <button type="submit" class="btn btn-success btn-sm"><i class="fas fa-check"></i> Setuju</button>
                                     </form>
-                                    <button class="btn btn-danger btn-sm" onclick="showRejectForm(<?= $irs['id'] ?>, '<?= htmlspecialchars($irs['kode_mk']) ?>')">❌ Tolak</button>
+                                    <button class="btn btn-danger btn-sm" onclick="showRejectForm(<?= $irs['id'] ?>, '<?= htmlspecialchars($irs['kode_mk']) ?>')"><i class="fas fa-times"></i> Tolak</button>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -166,7 +166,7 @@ include __DIR__ . '/../../includes/header.php';
 <div id="modalReject" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 999;">
     <div class="modal-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);"></div>
     <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; padding: 30px; border-radius: 12px; max-width: 450px; width: 90%;">
-        <h3 style="margin-bottom: 10px;">❌ Tolak IRS</h3>
+        <h3 style="margin-bottom: 10px;"><i class="fas fa-times"></i> Tolak IRS</h3>
         <p style="color: #7f8c8d; margin-bottom: 15px;" id="rejectInfo">Menolak mata kuliah: </p>
         <form method="POST">
             <input type="hidden" name="action" value="reject">

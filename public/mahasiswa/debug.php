@@ -11,7 +11,7 @@ error_reporting(E_ALL);
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/session.php';
 
-echo "<h1>🔍 Debug Mahasiswa</h1>";
+echo "<h1>Debug Mahasiswa</h1>";
 
 // 1. Cek session
 echo "<h2>1. Session</h2>";
@@ -30,7 +30,7 @@ if ($user_id > 0) {
     $mahasiswa = $stmt->fetch();
     
     if ($mahasiswa) {
-        echo "<p style='color:green;'>✅ Mahasiswa ditemukan!</p>";
+        echo "<p style='color:green;'><i class='fas fa-check-circle'></i> Mahasiswa ditemukan!</p>";
         echo "<pre>";
         print_r($mahasiswa);
         echo "</pre>";
@@ -38,7 +38,7 @@ if ($user_id > 0) {
         echo "<p>NIM: " . $mahasiswa['nim'] . "</p>";
         echo "<p>Semester: " . $mahasiswa['semester'] . "</p>";
     } else {
-        echo "<p style='color:red;'>❌ Mahasiswa tidak ditemukan untuk user_id: $user_id</p>";
+        echo "<p style='color:red;'><i class='fas fa-times-circle'></i> Mahasiswa tidak ditemukan untuk user_id: $user_id</p>";
         echo "<p>Solusi: Insert data mahasiswa terlebih dahulu!</p>";
         
         // Cek user
@@ -51,7 +51,7 @@ if ($user_id > 0) {
         }
     }
 } else {
-    echo "<p style='color:red;'>❌ User tidak login!</p>";
+    echo "<p style='color:red;'><i class='fas fa-times-circle'></i> User tidak login!</p>";
 }
 
 // 3. Cek controller
@@ -59,7 +59,7 @@ echo "<h2>3. Controller Test</h2>";
 require_once __DIR__ . '/../../controllers/MahasiswaController.php';
 
 if (class_exists('MahasiswaController')) {
-    echo "<p style='color:green;'>✅ MahasiswaController ditemukan</p>";
+    echo "<p style='color:green;'><i class='fas fa-check-circle'></i> MahasiswaController ditemukan</p>";
     
     if (isset($mahasiswa) && $mahasiswa) {
         try {
@@ -70,13 +70,13 @@ if (class_exists('MahasiswaController')) {
             print_r($stats);
             echo "</pre>";
         } catch (Exception $e) {
-            echo "<p style='color:red;'>❌ Error: " . $e->getMessage() . "</p>";
+            echo "<p style='color:red;'><i class='fas fa-times-circle'></i> Error: " . $e->getMessage() . "</p>";
         }
     }
 } else {
-    echo "<p style='color:red;'>❌ MahasiswaController tidak ditemukan</p>";
+    echo "<p style='color:red;'><i class='fas fa-times-circle'></i> MahasiswaController tidak ditemukan</p>";
 }
 
-echo "<p><a href='/simak_app/public/index.php' class='btn btn-primary'>← Kembali ke Login</a></p>";
-echo "<p><a href='/simak_app/public/mahasiswa/dashboard.php' class='btn btn-success'>→ Coba Dashboard</a></p>";
+echo "<p><a href='/simak_app/public/index.php' class='btn btn-primary'><i class='fas fa-arrow-left'></i> Kembali ke Login</a></p>";
+echo "<p><a href='/simak_app/public/mahasiswa/dashboard.php' class='btn btn-success'><i class='fas fa-arrow-right'></i> Coba Dashboard</a></p>";
 ?>

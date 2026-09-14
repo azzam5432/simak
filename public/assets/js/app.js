@@ -186,7 +186,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (input) {
                 const type = input.type === 'password' ? 'text' : 'password';
                 input.type = type;
-                this.textContent = type === 'password' ? '👁️' : '👁️‍🗨️';
+                this.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
             }
         });
     });
@@ -308,7 +308,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 th.style.cursor = 'pointer';
                 th.innerHTML = th.innerHTML.replace(/ [▲▼]/, '');
             });
-            this.innerHTML += isAsc ? ' ▲' : ' ▼';
+            this.innerHTML += isAsc ? ' <i class="fas fa-sort-up"></i>' : ' <i class="fas fa-sort-down"></i>';
         });
     });
 });
@@ -318,7 +318,7 @@ function updateCountdown(el, deadline) {
     const diff = deadline - now;
     
     if (diff <= 0) {
-        el.innerHTML = '⏰ Expired';
+        el.innerHTML = '<i class="fas fa-clock"></i> Expired';
         el.style.color = '#e74c3c';
         return;
     }
@@ -331,7 +331,7 @@ function updateCountdown(el, deadline) {
     if (days > 0) text += days + 'd ';
     text += hours + 'h ' + minutes + 'm';
     
-    el.textContent = '⏳ ' + text;
+    el.innerHTML = '<i class="fas fa-hourglass-half"></i> ' + text;
     el.style.color = days < 1 ? '#e74c3c' : (days < 2 ? '#f39c12' : '#2ecc71');
 }
 
@@ -401,10 +401,10 @@ function showToast(message, type = 'success') {
         info: '#3498db'
     };
     const icons = {
-        success: '✅',
-        error: '❌',
-        warning: '⚠️',
-        info: 'ℹ️'
+        success: '<i class="fas fa-check-circle"></i>',
+        error: '<i class="fas fa-times-circle"></i>',
+        warning: '<i class="fas fa-exclamation-triangle"></i>',
+        info: '<i class="fas fa-info-circle"></i>'
     };
     
     toast.style.cssText = `
@@ -423,7 +423,7 @@ function showToast(message, type = 'success') {
         gap: 10px;
         font-family: Arial, sans-serif;
     `;
-    toast.innerHTML = `<span>${icons[type] || '📢'}</span> ${message}`;
+    toast.innerHTML = `<span>${icons[type] || '<i class="fas fa-bullhorn"></i>'}</span> ${message}`;
     
     toastContainer.appendChild(toast);
     

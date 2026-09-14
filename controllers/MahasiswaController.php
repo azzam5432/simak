@@ -20,7 +20,6 @@ class MahasiswaController {
     public function getDashboardStats() {
         $stats = [];
         
-        // Total SKS
         $stmt = $this->pdo->prepare("
             SELECT COALESCE(SUM(c.sks), 0) as total_sks
             FROM irs
@@ -30,7 +29,6 @@ class MahasiswaController {
         $stmt->execute([$this->mahasiswa_id]);
         $stats['total_sks'] = $stmt->fetch()['total_sks'] ?? 0;
         
-        // Total Mata Kuliah
         $stmt = $this->pdo->prepare("
             SELECT COUNT(*) as total
             FROM irs
@@ -39,7 +37,6 @@ class MahasiswaController {
         $stmt->execute([$this->mahasiswa_id]);
         $stats['total_matakuliah'] = $stmt->fetch()['total'] ?? 0;
         
-        // Tugas Mendatang (7 hari)
         $stmt = $this->pdo->prepare("
             SELECT COUNT(*) as total
             FROM tasks t
@@ -52,10 +49,8 @@ class MahasiswaController {
         $stmt->execute([$this->mahasiswa_id]);
         $stats['tugas_mendatang'] = $stmt->fetch()['total'] ?? 0;
         
-        // IPK
         $stats['ipk'] = $this->hitungIPK();
         
-        // Pengumuman belum dibaca
         $stmt = $this->pdo->prepare("
             SELECT COUNT(*) as total
             FROM announcements a
@@ -70,12 +65,7 @@ class MahasiswaController {
         return $stats;
     }
     
-    /**
-     * Get announcements dengan limit
-     * PERBAIKAN: LIMIT menggunakan intval untuk keamanan
-     */
     public function getAnnouncements($limit = 5) {
-        // PERBAIKAN: Cast limit ke integer untuk keamanan
         $limit = intval($limit);
         if ($limit < 1) $limit = 5;
         
@@ -88,7 +78,7 @@ class MahasiswaController {
                 AND ar.user_id = (SELECT user_id FROM mahasiswa WHERE id = ?)
             WHERE a.target_role IN ('all', 'mahasiswa')
             ORDER BY a.created_at DESC
-            LIMIT " . $limit . "  -- ← PERBAIKAN: LIMIT langsung di SQL
+            LIMIT " . $limit . "
         ");
         $stmt->execute([$this->mahasiswa_id]);
         return $stmt->fetchAll();
@@ -502,34 +492,82 @@ class MahasiswaController {
         return $stmt->fetchAll();
     }
     
-    public function konfirmasiPresensi($course_id, $kode) {
-        $sesi = $_SESSION['presensi_sesi'] ?? null;
-        
-        if (!$sesi || $sesi['course_id'] != $course_id) {
-            return ['success' => false, 'message' => 'Sesi presensi tidak aktif'];
-        }
-        
-        if ($sesi['kode'] != $kode) {
-            return ['success' => false, 'message' => 'Kode presensi salah'];
-        }
-        
-        $tanggal = date('Y-m-d');
+    /**
+     * Cek sesi presensi aktif untuk mahasiswa - DARI DATABASE
+     */
+    public function getActivePresensiSession() {
         $stmt = $this->pdo->prepare("
-            SELECT id FROM presensi 
-            WHERE course_id = ? AND mahasiswa_id = ? AND tanggal = ?
+            SELECT ps.*, c.kode_mk, c.nama_mk, c.ruang, c.hari,
+                   u.nama as dosen_nama
+            FROM presensi_sessions ps
+            JOIN courses c ON ps.course_id = c.id
+            LEFT JOIN dosen d ON ps.dosen_id = d.id
+            LEFT JOIN users u ON d.user_id = u.id
+            WHERE ps.is_active = 1 
+                AND ps.tanggal = CURDATE()
+                AND ps.waktu_mulai > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+                AND ps.course_id IN (
+                    SELECT course_id FROM irs 
+                    WHERE mahasiswa_id = ? AND status = 'approved'
+                )
+            ORDER BY ps.waktu_mulai DESC
+            LIMIT 1
         ");
-        $stmt->execute([$course_id, $this->mahasiswa_id, $tanggal]);
-        
-        if ($stmt->fetch()) {
-            return ['success' => false, 'message' => 'Anda sudah melakukan presensi hari ini'];
-        }
-        
+        $stmt->execute([$this->mahasiswa_id]);
+        return $stmt->fetch();
+    }
+    
+    /**
+     * Konfirmasi presensi - DARI DATABASE SESSION (SATU-SATUNYA VERSI)
+     */
+    public function konfirmasiPresensi($course_id, $kode) {
         try {
+            // Pastikan mahasiswa terdaftar (IRS approved) di mata kuliah ini
+            $stmt = $this->pdo->prepare("
+                SELECT id FROM irs
+                WHERE mahasiswa_id = ? AND course_id = ? AND status = 'approved'
+            ");
+            $stmt->execute([$this->mahasiswa_id, $course_id]);
+
+            if (!$stmt->fetch()) {
+                return ['success' => false, 'message' => 'Anda tidak terdaftar di mata kuliah ini'];
+            }
+
+            // Cek sesi aktif di database
+            $stmt = $this->pdo->prepare("
+                SELECT id, kode FROM presensi_sessions 
+                WHERE course_id = ? 
+                    AND is_active = 1 
+                    AND kode = ?
+                    AND tanggal = CURDATE()
+                    AND waktu_mulai > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+            ");
+            $stmt->execute([$course_id, $kode]);
+            $sesi = $stmt->fetch();
+            
+            if (!$sesi) {
+                return ['success' => false, 'message' => 'Sesi presensi tidak aktif atau kode salah'];
+            }
+            
+            // Cek apakah sudah presensi hari ini
+            $tanggal = date('Y-m-d');
+            $stmt = $this->pdo->prepare("
+                SELECT id FROM presensi 
+                WHERE course_id = ? AND mahasiswa_id = ? AND tanggal = ?
+            ");
+            $stmt->execute([$course_id, $this->mahasiswa_id, $tanggal]);
+            
+            if ($stmt->fetch()) {
+                return ['success' => false, 'message' => 'Anda sudah melakukan presensi hari ini'];
+            }
+            
+            // Simpan presensi
             $stmt = $this->pdo->prepare("
                 INSERT INTO presensi (course_id, mahasiswa_id, tanggal, status)
                 VALUES (?, ?, ?, 'hadir')
             ");
             $stmt->execute([$course_id, $this->mahasiswa_id, $tanggal]);
+            
             return ['success' => true, 'message' => 'Presensi berhasil!'];
         } catch (PDOException $e) {
             return ['success' => false, 'message' => $e->getMessage()];

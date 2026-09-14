@@ -33,7 +33,7 @@ include __DIR__ . '/../../includes/header.php';
 
 <div class="table-container">
     <div class="table-header">
-        <h3>📅 Jadwal Mengajar</h3>
+        <h3><i class="fas fa-calendar-alt"></i> Jadwal Mengajar</h3>
         <small style="color: #7f8c8d;">Semester <?= date('Y') ?></small>
     </div>
     
@@ -56,13 +56,13 @@ include __DIR__ . '/../../includes/header.php';
                                 <?= htmlspecialchars($jk['nama_mk']) ?>
                             </div>
                             <div style="font-size: 11px; color: #7f8c8d;">
-                                🕐 <?= date('H:i', strtotime($jk['jam_mulai'])) ?> - <?= date('H:i', strtotime($jk['jam_selesai'])) ?>
+                                <i class="fas fa-clock"></i> <?= date('H:i', strtotime($jk['jam_mulai'])) ?> - <?= date('H:i', strtotime($jk['jam_selesai'])) ?>
                             </div>
                             <div style="font-size: 11px; color: #7f8c8d;">
-                                📍 <?= htmlspecialchars($jk['ruang'] ?? 'TBD') ?>
+                                <i class="fas fa-map-marker-alt"></i> <?= htmlspecialchars($jk['ruang'] ?? 'TBD') ?>
                             </div>
                             <div style="font-size: 11px; color: #7f8c8d;">
-                                👥 <?= $jk['jumlah_mahasiswa'] ?? 0 ?> mahasiswa
+                                <i class="fas fa-users"></i> <?= $jk['jumlah_mahasiswa'] ?? 0 ?> mahasiswa
                             </div>
                         </div>
                     <?php endforeach; ?>

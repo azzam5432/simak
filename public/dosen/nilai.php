@@ -47,7 +47,7 @@ include __DIR__ . '/../../includes/header.php';
 
 <div class="table-container" style="margin-bottom: 20px;">
     <div class="table-header">
-        <h3>📝 Pilih Kelas</h3>
+        <h3><i class="fas fa-list-ul"></i> Pilih Kelas</h3>
     </div>
     <form method="GET" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
         <select name="course_id" required style="padding: 8px 14px; border: 1px solid #ddd; border-radius: 6px; min-width: 200px;">
@@ -67,7 +67,7 @@ include __DIR__ . '/../../includes/header.php';
 
 <div class="table-container">
     <div class="table-header">
-        <h3>📝 Input Nilai - <?= htmlspecialchars($matakuliah[0]['nama_mk'] ?? '') ?></h3>
+        <h3><i class="fas fa-edit"></i> Input Nilai - <?= htmlspecialchars($matakuliah[0]['nama_mk'] ?? '') ?></h3>
         <div>
             <span style="color: #7f8c8d;">Semester: <?= $semester ?></span>
             <span style="color: #7f8c8d; margin-left: 15px;">Total: <?= count($mahasiswa_nilai) ?> mahasiswa</span>
@@ -128,11 +128,11 @@ include __DIR__ . '/../../includes/header.php';
                         <td>
                             <?php if ($mn['status_verifikasi'] === 'verified'): ?>
                                 <span class="status-badge" style="background: #2ecc71; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 12px;">
-                                    ✅ Terverifikasi
+                                    <i class="fas fa-check-circle"></i> Terverifikasi
                                 </span>
                             <?php else: ?>
                                 <span class="status-badge" style="background: #f39c12; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 12px;">
-                                    📝 Draft
+                                    <i class="fas fa-pencil-alt"></i> Draft
                                 </span>
                             <?php endif; ?>
                         </td>
@@ -142,7 +142,7 @@ include __DIR__ . '/../../includes/header.php';
         </table>
         
         <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
-            <button type="submit" class="btn btn-primary">💾 Simpan Nilai</button>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Simpan Nilai</button>
             <small style="color: #7f8c8d; align-self: center;">
                 * Nilai akan disimpan sebagai Draft dan perlu diverifikasi oleh Admin
             </small>

@@ -1,4 +1,8 @@
 <?php
+// ============================================
+// public/mahasiswa/presensi.php
+// Presensi Digital Mahasiswa
+// ============================================
 
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/session.php';
@@ -18,6 +22,7 @@ if (!$mahasiswa) {
 
 $controller = new MahasiswaController($pdo, $mahasiswa['id']);
 
+// Proses konfirmasi presensi
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'konfirmasi') {
     $result = $controller->konfirmasiPresensi($_POST['course_id'], $_POST['kode']);
     if ($result['success']) {
@@ -27,19 +32,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-$jadwal = $controller->getJadwalKuliah();
+// AMBIL SESI AKTIF DARI DATABASE
+$sesi_aktif = $controller->getActivePresensiSession();
 $rekap = $controller->getRekapPresensi();
-$sesi_aktif = $_SESSION['presensi_sesi'] ?? null;
-
-$kursus_aktif = [];
-if ($sesi_aktif) {
-    foreach ($jadwal as $j) {
-        if ($j['id'] == $sesi_aktif['course_id']) {
-            $kursus_aktif = $j;
-            break;
-        }
-    }
-}
 
 include __DIR__ . '/../../includes/header.php';
 ?>
@@ -47,17 +42,25 @@ include __DIR__ . '/../../includes/header.php';
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
     <div>
         <div class="table-container">
-            <h3>Presensi Digital</h3>
+            <h3><i class="fas fa-check-circle"></i> Presensi Digital</h3>
             
-            <?php if ($sesi_aktif && $kursus_aktif): ?>
+            <?php if ($sesi_aktif): ?>
                 <div style="padding: 15px; background: #d4edda; border-radius: 6px; margin-bottom: 15px;">
-                    <h4 style="margin: 0; color: #155724;">🟢 Sesi Presensi Aktif</h4>
-                    <p style="margin: 5px 0; color: #155724;">
-                        <strong><?= htmlspecialchars($kursus_aktif['kode_mk']) ?></strong> - 
-                        <?= htmlspecialchars($kursus_aktif['nama_mk']) ?>
+                    <h4 style="margin: 0; color: #155724;">
+                        <i class="fas fa-circle" style="color: #2ecc71;"></i> Sesi Presensi Aktif
+                    </h4>
+                    <p style="margin: 8px 0; color: #155724;">
+                        <strong><?= htmlspecialchars($sesi_aktif['kode_mk']) ?></strong> - 
+                        <?= htmlspecialchars($sesi_aktif['nama_mk']) ?>
                     </p>
-                    <p style="margin: 0; color: #155724; font-size: 13px;">
-                        Kode: <strong><?= $sesi_aktif['kode'] ?></strong>
+                    <p style="margin: 5px 0; color: #155724; font-size: 13px;">
+                        <i class="fas fa-user-tie"></i> Dosen: <?= htmlspecialchars($sesi_aktif['dosen_nama'] ?? '-') ?>
+                    </p>
+                    <p style="margin: 5px 0; color: #155724; font-size: 13px;">
+                        <i class="fas fa-map-pin"></i> Ruang: <?= htmlspecialchars($sesi_aktif['ruang'] ?? '-') ?>
+                    </p>
+                    <p style="margin: 5px 0; color: #155724; font-size: 13px;">
+                        <i class="fas fa-clock"></i> Mulai: <?= date('H:i:s', strtotime($sesi_aktif['waktu_mulai'])) ?>
                     </p>
                 </div>
                 
@@ -66,23 +69,27 @@ include __DIR__ . '/../../includes/header.php';
                     <input type="hidden" name="course_id" value="<?= $sesi_aktif['course_id'] ?>">
                     
                     <div class="form-group">
-                        <label>Masukkan Kode Presensi</label>
-                        <input type="text" name="kode" placeholder="Masukkan kode dari dosen" required 
-                               style="font-size: 20px; text-align: center; letter-spacing: 5px; padding: 15px;">
+                        <label>Masukkan Kode Presensi dari Dosen</label>
+                        <input type="text" name="kode" placeholder="Contoh: 123456" required 
+                               style="font-size: 24px; text-align: center; letter-spacing: 8px; padding: 15px; font-weight: bold;"
+                               maxlength="6" pattern="[0-9]{6}">
                     </div>
                     
-                    <button type="submit" class="btn btn-success btn-block" style="padding: 12px; font-size: 16px;">
-                        Konfirmasi Kehadiran
+                    <button type="submit" class="btn btn-success btn-block" style="padding: 14px; font-size: 16px;">
+                        <i class="fas fa-check"></i> Konfirmasi Kehadiran
                     </button>
                 </form>
             <?php else: ?>
-                <div style="padding: 30px; text-align: center; color: #7f8c8d;">
-                    <div style="font-size: 48px;">⏳</div>
+                <div style="padding: 40px; text-align: center; color: #7f8c8d;">
+                    <i class="fas fa-hourglass-half" style="font-size: 48px; margin-bottom: 15px;"></i>
                     <h3>Belum Ada Sesi Presensi</h3>
                     <p>Silakan tunggu dosen membuka sesi presensi.</p>
                     <p style="font-size: 13px; margin-top: 10px;">
-                        Atau refresh halaman ini secara berkala.
+                        <i class="fas fa-sync-alt"></i> Refresh halaman ini secara berkala.
                     </p>
+                    <button onclick="location.reload()" class="btn btn-primary btn-sm" style="margin-top: 15px;">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
                 </div>
             <?php endif; ?>
         </div>
@@ -90,11 +97,11 @@ include __DIR__ . '/../../includes/header.php';
     
     <div>
         <div class="table-container">
-            <h3>📊 Rekap Presensi</h3>
+            <h3><i class="fas fa-chart-bar"></i> Rekap Presensi</h3>
             
             <?php if (empty($rekap)): ?>
                 <p style="text-align: center; color: #7f8c8d; padding: 20px;">
-                    Belum ada data presensi
+                    <i class="fas fa-inbox"></i> Belum ada data presensi
                 </p>
             <?php else: ?>
                 <?php foreach ($rekap as $r): ?>
@@ -124,5 +131,12 @@ include __DIR__ . '/../../includes/header.php';
         </div>
     </div>
 </div>
+
+<script>
+// Auto refresh setiap 30 detik untuk cek sesi baru
+setTimeout(function() {
+    location.reload();
+}, 30000);
+</script>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>

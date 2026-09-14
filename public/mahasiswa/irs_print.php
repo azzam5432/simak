@@ -128,7 +128,7 @@ $program_studi = $irs_data[0]['program_studi'] ?? '';
 </head>
 <body>
     <div class="header">
-        <h1>📋 RENCANA STUDI (IRS)</h1>
+        <h1>RENCANA STUDI (IRS)</h1>
         <p>Politeknik Mitra Industri</p>
         <p>Semester <?= $semester ?> - Tahun Akademik <?= date('Y') ?></p>
     </div>
@@ -195,10 +195,10 @@ $program_studi = $irs_data[0]['program_studi'] ?? '';
     
     <div style="text-align: center; margin-top: 15px;" class="no-print">
         <button onclick="window.print()" style="padding: 8px 20px; border: none; background: #3498db; color: #fff; border-radius: 6px; cursor: pointer; font-size: 14px;">
-            🖨️ Cetak / Print
+            <i class="fas fa-print"></i> Cetak / Print
         </button>
         <button onclick="window.close()" style="padding: 8px 20px; border: none; background: #95a5a6; color: #fff; border-radius: 6px; cursor: pointer; font-size: 14px;">
-            ✕ Tutup
+            <i class="fas fa-times"></i> Tutup
         </button>
     </div>
 </body>

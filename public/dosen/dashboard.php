@@ -28,34 +28,34 @@ include __DIR__ . '/../../includes/header.php';
 <div class="stats-grid">
     <div class="stat-card">
         <div class="stat-number"><?= $stats['total_kelas'] ?></div>
-        <div class="stat-label">📚 Kelas Diampu</div>
+        <div class="stat-label"><i class="fas fa-book"></i> Kelas Diampu</div>
     </div>
     <div class="stat-card">
         <div class="stat-number"><?= $stats['total_mahasiswa'] ?></div>
-        <div class="stat-label">👨‍🎓 Total Mahasiswa</div>
+        <div class="stat-label"><i class="fas fa-user-graduate"></i> Total Mahasiswa</div>
     </div>
     <div class="stat-card">
         <div class="stat-number" style="color: <?= $stats['tugas_aktif'] > 0 ? '#f39c12' : '#2ecc71' ?>">
             <?= $stats['tugas_aktif'] ?>
         </div>
-        <div class="stat-label">📄 Tugas Aktif</div>
+        <div class="stat-label"><i class="fas fa-file-alt"></i> Tugas Aktif</div>
     </div>
     <div class="stat-card">
         <div class="stat-number" style="color: <?= $stats['presensi_hari_ini'] > 0 ? '#2ecc71' : '#95a5a6' ?>">
             <?= $stats['presensi_hari_ini'] ?>
         </div>
-        <div class="stat-label">✅ Presensi Hari Ini</div>
+        <div class="stat-label"><i class="fas fa-check"></i> Presensi Hari Ini</div>
     </div>
 </div>
 
 <div class="table-container">
     <div class="table-header">
-        <h3>📅 Jadwal Mengajar Hari Ini - <?= date('d-m-Y') ?></h3>
+        <h3><i class="fas fa-calendar-alt"></i> Jadwal Mengajar Hari Ini - <?= date('d-m-Y') ?></h3>
     </div>
     
     <?php if (empty($jadwal_hari_ini)): ?>
         <div style="text-align: center; padding: 30px; color: #7f8c8d;">
-            <h3>🎉 Tidak ada jadwal mengajar hari ini</h3>
+            <h3><i class="fas fa-smile"></i> Tidak ada jadwal mengajar hari ini</h3>
             <p>Silakan periksa jadwal lengkap di menu Jadwal Mengajar</p>
         </div>
     <?php else: ?>
@@ -84,8 +84,8 @@ include __DIR__ . '/../../includes/header.php';
                         </td>
                         <td><?= $jk['jumlah_mahasiswa'] ?? 0 ?> orang</td>
                         <td>
-                            <a href="/simak_app/public/dosen/presensi.php?course_id=<?= $jk['id'] ?>" class="btn btn-primary btn-sm">📋 Presensi</a>
-                            <a href="/simak_app/public/dosen/nilai.php?course_id=<?= $jk['id'] ?>" class="btn btn-success btn-sm">📝 Nilai</a>
+                            <a href="/simak_app/public/dosen/presensi.php?course_id=<?= $jk['id'] ?>" class="btn btn-primary btn-sm"><i class="fas fa-clipboard-list"></i> Presensi</a>
+                            <a href="/simak_app/public/dosen/nilai.php?course_id=<?= $jk['id'] ?>" class="btn btn-success btn-sm"><i class="fas fa-edit"></i> Nilai</a>
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -96,7 +96,7 @@ include __DIR__ . '/../../includes/header.php';
 
 <div class="table-container">
     <div class="table-header">
-        <h3>📢 Pengumuman Terbaru</h3>
+        <h3><i class="fas fa-bullhorn"></i> Pengumuman Terbaru</h3>
     </div>
     <?php
     $announcements = $controller->getReceivedAnnouncements();

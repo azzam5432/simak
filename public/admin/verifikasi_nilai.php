@@ -56,12 +56,12 @@ include __DIR__ . '/../../includes/header.php';
 
 <div class="table-container">
     <div class="table-header">
-        <h3>📝 Nilai Menunggu Verifikasi</h3>
+        <h3><i class="fas fa-edit"></i> Nilai Menunggu Verifikasi</h3>
     </div>
     
     <?php if (empty($courses_with_draft)): ?>
         <div style="text-align: center; padding: 40px; color: #7f8c8d;">
-            <h3>✅ Semua nilai telah diverifikasi</h3>
+            <h3><i class="fas fa-check"></i> Semua nilai telah diverifikasi</h3>
             <p>Tidak ada nilai draft yang menunggu verifikasi.</p>
         </div>
     <?php else: ?>
@@ -85,7 +85,7 @@ include __DIR__ . '/../../includes/header.php';
                         <form method="POST" onsubmit="return confirm('Verifikasi semua nilai untuk <?= htmlspecialchars($course['kode_mk']) ?>?')">
                             <input type="hidden" name="action" value="verify_all">
                             <input type="hidden" name="course_id" value="<?= $course['id'] ?>">
-                            <button type="submit" class="btn btn-success">✅ Verifikasi Semua</button>
+                            <button type="submit" class="btn btn-success"><i class="fas fa-check"></i> Verifikasi Semua</button>
                         </form>
                     </div>
                 </div>
@@ -120,7 +120,7 @@ include __DIR__ . '/../../includes/header.php';
                                     <form method="POST" style="display: inline-block;">
                                         <input type="hidden" name="action" value="verify">
                                         <input type="hidden" name="grade_id" value="<?= $g['id'] ?>">
-                                        <button type="submit" class="btn btn-success btn-sm">✅ Verifikasi</button>
+                                        <button type="submit" class="btn btn-success btn-sm"><i class="fas fa-check"></i> Verifikasi</button>
                                     </form>
                                 </td>
                             </tr>

@@ -29,6 +29,7 @@ function checkAccess($allowedRoles = []) {
         <html>
         <head>
             <title>Akses Ditolak</title>
+            <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css'>
             <style>
                 body { font-family: Arial; text-align: center; padding: 50px; background: #f8f9fa; }
                 .container { max-width: 500px; margin: 0 auto; background: #fff; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -43,7 +44,7 @@ function checkAccess($allowedRoles = []) {
         </head>
         <body>
             <div class='container'>
-                <h1>⛔ Akses Ditolak</h1>
+                <h1><i class='fas fa-ban'></i> Akses Ditolak</h1>
                 <p>Anda tidak memiliki izin untuk mengakses halaman ini.</p>
                 <p>
                     Role Anda: 
@@ -51,7 +52,7 @@ function checkAccess($allowedRoles = []) {
                         " . ucfirst(htmlspecialchars($role)) . "
                     </span>
                 </p>
-                <p><a href='" . $dashboard . "' class='btn'>← Kembali ke Dashboard</a></p>
+                <p><a href='" . $dashboard . "' class='btn'><i class='fas fa-arrow-left'></i> Kembali ke Dashboard</a></p>
             </div>
         </body>
         </html>";

@@ -1,4 +1,8 @@
 <?php
+// ============================================
+// public/dosen/presensi.php
+// Presensi Kelas Dosen
+// ============================================
 
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/session.php';
@@ -45,11 +49,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $result = $controller->bukaSesiPresensi($_POST['course_id']);
             if ($result['success']) {
                 redirectWithMessage('/simak_app/public/dosen/presensi.php?course_id=' . $_POST['course_id'], 'Sesi presensi dibuka! Kode: ' . $result['kode'], 'success');
+            } else {
+                redirectWithMessage('/simak_app/public/dosen/presensi.php?course_id=' . $_POST['course_id'], 'Gagal: ' . $result['message'], 'error');
             }
             break;
             
         case 'close_session':
-            $result = $controller->tutupSesiPresensi();
+            $result = $controller->tutupSesiPresensi($_POST['course_id'] ?? $course_id);
             redirectWithMessage('/simak_app/public/dosen/presensi.php?course_id=' . $course_id, 'Sesi presensi ditutup!', 'success');
             break;
     }
@@ -59,7 +65,7 @@ if ($course_id) {
     $mahasiswa = $controller->getMahasiswaPerKelas($course_id);
     $presensi = $controller->getPresensiByCourse($course_id, $tanggal);
     $rekap = $controller->getRekapPresensi($course_id);
-    $sesi_aktif = $controller->cekSesiPresensi();
+    $sesi_aktif = $controller->cekSesiPresensi($course_id);
     
     $presensi_map = [];
     foreach ($presensi as $p) {
@@ -72,7 +78,7 @@ include __DIR__ . '/../../includes/header.php';
 
 <div class="table-container" style="margin-bottom: 20px;">
     <div class="table-header">
-        <h3>📋 Pilih Kelas</h3>
+        <h3><i class="fas fa-chalkboard"></i> Pilih Kelas</h3>
     </div>
     <form method="GET" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
         <select name="course_id" required style="padding: 8px 14px; border: 1px solid #ddd; border-radius: 6px; min-width: 200px;">
@@ -93,34 +99,51 @@ include __DIR__ . '/../../includes/header.php';
 
 <div class="table-container" style="margin-bottom: 20px;">
     <div class="table-header">
-        <h3>🔴 Sesi Presensi</h3>
+        <h3><i class="fas fa-broadcast-tower"></i> Sesi Presensi</h3>
     </div>
-    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-        <?php if ($sesi_aktif && $sesi_aktif['course_id'] == $course_id): ?>
-            <div style="padding: 10px 15px; background: #d4edda; border-radius: 6px; color: #155724;">
-                ✅ Sesi Aktif - Kode: <strong><?= $sesi_aktif['kode'] ?></strong>
-                <small style="display: block; color: #155724;">Mulai: <?= $sesi_aktif['waktu_mulai'] ?></small>
+    <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+        <?php if ($sesi_aktif): ?>
+            <div style="padding: 15px 20px; background: #d4edda; border-radius: 8px; color: #155724; flex: 1;">
+                <div style="font-size: 14px; margin-bottom: 5px;">
+                    <i class="fas fa-circle" style="color: #2ecc71;"></i> <strong>Sesi Aktif</strong>
+                </div>
+                <div style="font-size: 32px; font-weight: bold; letter-spacing: 5px; text-align: center; padding: 10px; background: #fff; border-radius: 6px; margin: 10px 0;">
+                    <?= $sesi_aktif['kode'] ?>
+                </div>
+                <small>
+                    <i class="fas fa-clock"></i> Mulai: <?= date('H:i:s', strtotime($sesi_aktif['waktu_mulai'])) ?>
+                </small>
+                <p style="margin: 5px 0 0; font-size: 13px;">
+                    <i class="fas fa-info-circle"></i> Beritahu kode ini ke mahasiswa untuk presensi
+                </p>
             </div>
             <form method="POST">
                 <input type="hidden" name="action" value="close_session">
-                <button type="submit" class="btn btn-danger">🔴 Tutup Sesi</button>
+                <input type="hidden" name="course_id" value="<?= $sesi_aktif['course_id'] ?>">
+                <button type="submit" class="btn btn-danger" style="padding: 15px 25px;">
+                    <i class="fas fa-stop-circle"></i> Tutup Sesi
+                </button>
             </form>
         <?php else: ?>
-            <form method="POST">
+            <form method="POST" style="flex: 1;">
                 <input type="hidden" name="action" value="open_session">
                 <input type="hidden" name="course_id" value="<?= $course_id ?>">
-                <button type="submit" class="btn btn-success">🟢 Buka Sesi Presensi</button>
+                <button type="submit" class="btn btn-success btn-block" style="padding: 15px; font-size: 16px;">
+                    <i class="fas fa-play-circle"></i> Buka Sesi Presensi
+                </button>
             </form>
-            <span style="color: #7f8c8d; align-self: center;">Kode akan muncul setelah sesi dibuka</span>
+            <span style="color: #7f8c8d; font-size: 13px;">
+                <i class="fas fa-info-circle"></i> Kode akan muncul setelah sesi dibuka
+            </span>
         <?php endif; ?>
     </div>
 </div>
 
 <div class="table-container" style="margin-bottom: 20px;">
     <div class="table-header">
-        <h3>📝 Input Presensi - <?= date('d-m-Y', strtotime($tanggal)) ?></h3>
+        <h3><i class="fas fa-clipboard-list"></i> Input Presensi - <?= date('d-m-Y', strtotime($tanggal)) ?></h3>
         <div>
-            <span style="color: #7f8c8d;">Total Mahasiswa: <?= count($mahasiswa) ?></span>
+            <span style="color: #7f8c8d;">Total: <?= count($mahasiswa) ?> mahasiswa</span>
         </div>
     </div>
     
@@ -143,11 +166,11 @@ include __DIR__ . '/../../includes/header.php';
                         <td><strong><?= htmlspecialchars($m['nim']) ?></strong></td>
                         <td><?= htmlspecialchars($m['nama']) ?></td>
                         <td>
-                            <select name="presensi[<?= $m['id'] ?>]" required>
-                                <option value="hadir" <?= ($presensi_map[$m['id']] ?? '') === 'hadir' ? 'selected' : '' ?>>✅ Hadir</option>
-                                <option value="izin" <?= ($presensi_map[$m['id']] ?? '') === 'izin' ? 'selected' : '' ?>>📝 Izin</option>
-                                <option value="sakit" <?= ($presensi_map[$m['id']] ?? '') === 'sakit' ? 'selected' : '' ?>>🏥 Sakit</option>
-                                <option value="alpa" <?= ($presensi_map[$m['id']] ?? '') === 'alpa' ? 'selected' : '' ?>>❌ Alpa</option>
+                            <select name="presensi[<?= $m['mahasiswa_id'] ?>]" required>
+                                <option value="hadir" <?= ($presensi_map[$m['id']] ?? '') === 'hadir' ? 'selected' : '' ?>>Hadir</option>
+                                <option value="izin" <?= ($presensi_map[$m['id']] ?? '') === 'izin' ? 'selected' : '' ?>>Izin</option>
+                                <option value="sakit" <?= ($presensi_map[$m['id']] ?? '') === 'sakit' ? 'selected' : '' ?>>Sakit</option>
+                                <option value="alpa" <?= ($presensi_map[$m['id']] ?? '') === 'alpa' ? 'selected' : '' ?>>Alpa</option>
                             </select>
                         </td>
                     </tr>
@@ -156,14 +179,16 @@ include __DIR__ . '/../../includes/header.php';
         </table>
         
         <div style="margin-top: 15px;">
-            <button type="submit" class="btn btn-primary">💾 Simpan Presensi</button>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Simpan Presensi
+            </button>
         </div>
     </form>
 </div>
 
 <div class="table-container">
     <div class="table-header">
-        <h3>📊 Rekap Presensi</h3>
+        <h3><i class="fas fa-chart-bar"></i> Rekap Presensi</h3>
     </div>
     
     <table>
@@ -190,14 +215,6 @@ include __DIR__ . '/../../includes/header.php';
                     <td><strong><?= $r['total_pertemuan'] ?></strong></td>
                 </tr>
             <?php endforeach; ?>
-            
-            <?php if (empty($rekap)): ?>
-                <tr>
-                    <td colspan="7" style="text-align: center; color: #7f8c8d; padding: 30px;">
-                        Belum ada data presensi
-                    </td>
-                </tr>
-            <?php endif; ?>
         </tbody>
     </table>
 </div>

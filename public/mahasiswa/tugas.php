@@ -34,9 +34,9 @@ include __DIR__ . '/../../includes/header.php';
 
 <div class="table-container">
     <div class="table-header">
-        <h3>📄 Daftar Tugas</h3>
+        <h3><i class="fas fa-file-alt"></i> Daftar Tugas</h3>
         <div>
-            <input type="text" id="tableSearch" placeholder="🔍 Cari tugas..." style="padding: 8px 14px; border: 1px solid #ddd; border-radius: 6px;">
+            <input type="text" id="tableSearch" placeholder="Cari tugas..." style="padding: 8px 14px; border: 1px solid #ddd; border-radius: 6px;">
         </div>
     </div>
     
@@ -59,10 +59,10 @@ include __DIR__ . '/../../includes/header.php';
                 <?php foreach ($tugas as $t):
                     $status_tugas = $t['status_tugas'];
                     $status_label = [
-                        'active' => '🟢 Aktif',
-                        'urgent' => '🔴 Mendesak!',
-                        'submitted' => '✅ Dikumpulkan',
-                        'expired' => '⏰ Expired'
+                        'active' => '<i class="fas fa-circle"></i> Aktif',
+                        'urgent' => '<i class="fas fa-circle"></i> Mendesak!',
+                        'submitted' => '<i class="fas fa-check"></i> Dikumpulkan',
+                        'expired' => '<i class="fas fa-clock"></i> Expired'
                     ];
                     $status_color = [
                         'active' => '#2ecc71',
@@ -77,7 +77,7 @@ include __DIR__ . '/../../includes/header.php';
                         <td>
                             <?= date('d-m-Y H:i', strtotime($t['deadline'])) ?>
                             <?php if ($status_tugas === 'urgent'): ?>
-                                <br><small style="color: #e74c3c;">⏳ <?= floor($t['jam_tersisa'] / 24) ?> hari <?= $t['jam_tersisa'] % 24 ?> jam lagi</small>
+                                <br><small style="color: #e74c3c;"><i class="fas fa-hourglass-half"></i> <?= floor($t['jam_tersisa'] / 24) ?> hari <?= $t['jam_tersisa'] % 24 ?> jam lagi</small>
                             <?php endif; ?>
                         </td>
                         <td>
@@ -91,12 +91,12 @@ include __DIR__ . '/../../includes/header.php';
                         <td>
                             <?php if ($status_tugas === 'active' || $status_tugas === 'urgent'): ?>
                                 <button class="btn btn-primary btn-sm" onclick="submitTugas(<?= $t['id'] ?>, '<?= htmlspecialchars($t['judul']) ?>')">
-                                    📤 Kumpulkan
+                                    <i class="fas fa-upload"></i> Kumpulkan
                                 </button>
                             <?php elseif ($status_tugas === 'submitted'): ?>
-                                <span style="color: #2ecc71;">✅ Tersubmit</span>
+                                <span style="color: #2ecc71;"><i class="fas fa-check"></i> Tersubmit</span>
                             <?php else: ?>
-                                <span style="color: #95a5a6;">⏰ Expired</span>
+                                <span style="color: #95a5a6;"><i class="fas fa-clock"></i> Expired</span>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -109,7 +109,7 @@ include __DIR__ . '/../../includes/header.php';
 <div id="modalSubmit" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 999;">
     <div class="modal-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);"></div>
     <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; padding: 30px; border-radius: 12px; max-width: 450px; width: 90%;">
-        <h3 style="margin-bottom: 10px;">📤 Kumpulkan Tugas</h3>
+        <h3 style="margin-bottom: 10px;"><i class="fas fa-upload"></i> Kumpulkan Tugas</h3>
         <p id="submitInfo" style="color: #7f8c8d; margin-bottom: 15px;"></p>
         <form method="POST" enctype="multipart/form-data">
             <input type="hidden" name="action" value="submit">
@@ -119,7 +119,7 @@ include __DIR__ . '/../../includes/header.php';
                 <textarea name="catatan" rows="3" placeholder="Tambahkan catatan untuk tugas..."></textarea>
             </div>
             <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button type="submit" class="btn btn-primary">📤 Kumpulkan</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-upload"></i> Kumpulkan</button>
                 <button type="button" class="btn btn-secondary" onclick="document.getElementById('modalSubmit').style.display='none'">Batal</button>
             </div>
         </form>
