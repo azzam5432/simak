@@ -734,5 +734,328 @@ class AdminController {
         
         return $stats;
     }
+
+    /**
+ * Reset password user dan kirim email notifikasi
+ */
+public function resetUserPassword($user_id) {
+    try {
+        // Get data user
+        $stmt = $this->pdo->prepare("
+            SELECT u.*, 
+                   COALESCE(m.nim, d.nidn) as identifier
+            FROM users u
+            LEFT JOIN mahasiswa m ON u.id = m.user_id
+            LEFT JOIN dosen d ON u.id = d.user_id
+            WHERE u.id = ?
+        ");
+        $stmt->execute([$user_id]);
+        $user = $stmt->fetch();
+        
+        if (!$user) {
+            return ['success' => false, 'message' => 'User tidak ditemukan'];
+        }
+        
+        // Generate password baru (8 karakter acak)
+        $new_password = $this->generateRandomPassword(8);
+        $hashed = password_hash($new_password, PASSWORD_DEFAULT);
+        
+        // Update password
+        $stmt = $this->pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
+        $stmt->execute([$hashed, $user_id]);
+        
+        // Kirim email notifikasi (jika ada email)
+        $email_sent = false;
+        if (!empty($user['email'])) {
+            require_once __DIR__ . '/../helper/EmailHelper.php';
+            require_once __DIR__ . '/../template/email/reset_password.php';
+            
+            $emailHelper = new EmailHelper();
+            $body = renderResetPassword([
+                'nama' => $user['nama'],
+                'username' => $user['username'],
+                'new_password' => $new_password,
+                'reset_by' => $_SESSION['nama'] ?? 'Admin'
+            ]);
+            
+            $result = $emailHelper->send(
+                $user['email'],
+                $user['nama'],
+                'Password Akun SIMAK Anda Direset',
+                $body
+            );
+            
+            $email_sent = $result['success'];
+        }
+        
+        return [
+            'success' => true,
+            'new_password' => $new_password,
+            'email_sent' => $email_sent,
+            'message' => 'Password berhasil direset' . ($email_sent ? ' dan email terkirim' : '')
+        ];
+        
+    } catch (PDOException $e) {
+        return ['success' => false, 'message' => $e->getMessage()];
+    }
+}
+
+/**
+ * Generate random password
+ */
+private function generateRandomPassword($length = 8) {
+    $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    $password = '';
+    for ($i = 0; $i < $length; $i++) {
+        $password .= $chars[random_int(0, strlen($chars) - 1)];
+    }
+    return $password;
+}
+
+/**
+ * Approve IRS dan kirim email notifikasi
+ */
+public function approveIRSDenganEmail($irs_id, $mahasiswa_id, $semester) {
+    try {
+        // Approve IRS
+        $stmt = $this->pdo->prepare("
+            UPDATE irs 
+            SET status = 'approved', updated_at = NOW()
+            WHERE id = ?
+        ");
+        $stmt->execute([$irs_id]);
+        
+        // Get data mahasiswa & IRS
+        $stmt = $this->pdo->prepare("
+            SELECT u.nama, u.email, m.nim
+            FROM mahasiswa m
+            JOIN users u ON m.user_id = u.id
+            WHERE m.id = ?
+        ");
+        $stmt->execute([$mahasiswa_id]);
+        $mahasiswa = $stmt->fetch();
+        
+        // Get daftar MK yang di-approve di semester ini
+        $stmt = $this->pdo->prepare("
+            SELECT c.kode_mk, c.nama_mk, c.sks
+            FROM irs i
+            JOIN courses c ON i.course_id = c.id
+            WHERE i.mahasiswa_id = ? AND i.semester = ? AND i.status = 'approved'
+        ");
+        $stmt->execute([$mahasiswa_id, $semester]);
+        $matakuliah = $stmt->fetchAll();
+        
+        $total_sks = array_sum(array_column($matakuliah, 'sks'));
+        
+        // Kirim email
+        $email_sent = false;
+        if ($mahasiswa && !empty($mahasiswa['email'])) {
+            require_once __DIR__ . '/../helper/EmailHelper.php';
+            require_once __DIR__ . '/../template/email/irs_notification.php';
+            
+            $emailHelper = new EmailHelper();
+            $body = renderIRSNotification([
+                'nama' => $mahasiswa['nama'],
+                'nim' => $mahasiswa['nim'],
+                'semester' => $semester,
+                'status' => 'approved',
+                'catatan' => null,
+                'total_sks' => $total_sks,
+                'matakuliah' => $matakuliah
+            ]);
+            
+            $result = $emailHelper->send(
+                $mahasiswa['email'],
+                $mahasiswa['nama'],
+                'IRS Anda Telah Disetujui',
+                $body
+            );
+            
+            $email_sent = $result['success'];
+        }
+        
+        return [
+            'success' => true,
+            'email_sent' => $email_sent
+        ];
+        
+    } catch (PDOException $e) {
+        return ['success' => false, 'message' => $e->getMessage()];
+    }
+}
+
+/**
+ * Reject IRS dan kirim email notifikasi
+ */
+public function rejectIRSDenganEmail($irs_id, $mahasiswa_id, $semester, $catatan = null) {
+    try {
+        // Reject IRS
+        $stmt = $this->pdo->prepare("
+            UPDATE irs 
+            SET status = 'rejected', catatan = ?, updated_at = NOW()
+            WHERE id = ?
+        ");
+        $stmt->execute([$catatan, $irs_id]);
+        
+        // Get data mahasiswa
+        $stmt = $this->pdo->prepare("
+            SELECT u.nama, u.email, m.nim
+            FROM mahasiswa m
+            JOIN users u ON m.user_id = u.id
+            WHERE m.id = ?
+        ");
+        $stmt->execute([$mahasiswa_id]);
+        $mahasiswa = $stmt->fetch();
+        
+        // Get daftar MK
+        $stmt = $this->pdo->prepare("
+            SELECT c.kode_mk, c.nama_mk, c.sks
+            FROM irs i
+            JOIN courses c ON i.course_id = c.id
+            WHERE i.id = ?
+        ");
+        $stmt->execute([$irs_id]);
+        $matakuliah = $stmt->fetchAll();
+        
+        // Kirim email
+        $email_sent = false;
+        if ($mahasiswa && !empty($mahasiswa['email'])) {
+            require_once __DIR__ . '/../helper/EmailHelper.php';
+            require_once __DIR__ . '/../template/email/irs_notification.php';
+            
+            $emailHelper = new EmailHelper();
+            $body = renderIRSNotification([
+                'nama' => $mahasiswa['nama'],
+                'nim' => $mahasiswa['nim'],
+                'semester' => $semester,
+                'status' => 'rejected',
+                'catatan' => $catatan,
+                'total_sks' => 0,
+                'matakuliah' => $matakuliah
+            ]);
+            
+            $result = $emailHelper->send(
+                $mahasiswa['email'],
+                $mahasiswa['nama'],
+                'IRS Anda Ditolak',
+                $body
+            );
+            
+            $email_sent = $result['success'];
+        }
+        
+        return [
+            'success' => true,
+            'email_sent' => $email_sent
+        ];
+        
+    } catch (PDOException $e) {
+        return ['success' => false, 'message' => $e->getMessage()];
+    }
+}
+
+/**
+ * Verifikasi nilai dan kirim email notifikasi
+ */
+public function verifyGradeDenganEmail($grade_id) {
+    try {
+        // Verify grade
+        $stmt = $this->pdo->prepare("
+            UPDATE grades 
+            SET status_verifikasi = 'verified', updated_at = NOW()
+            WHERE id = ?
+        ");
+        $stmt->execute([$grade_id]);
+        
+        // Get detail nilai
+        $stmt = $this->pdo->prepare("
+            SELECT 
+                g.*,
+                u.nama, u.email,
+                m.nim,
+                c.kode_mk, c.nama_mk, c.sks
+            FROM grades g
+            JOIN mahasiswa m ON g.mahasiswa_id = m.id
+            JOIN users u ON m.user_id = u.id
+            JOIN courses c ON g.course_id = c.id
+            WHERE g.id = ?
+        ");
+        $stmt->execute([$grade_id]);
+        $nilai = $stmt->fetch();
+        
+        // Kirim email
+        $email_sent = false;
+        if ($nilai && !empty($nilai['email'])) {
+            require_once __DIR__ . '/../helper/EmailHelper.php';
+            require_once __DIR__ . '/../template/email/nilai_notification.php';
+            
+            $emailHelper = new EmailHelper();
+            $body = renderNilaiNotification([
+                'nama' => $nilai['nama'],
+                'nim' => $nilai['nim'],
+                'kode_mk' => $nilai['kode_mk'],
+                'nama_mk' => $nilai['nama_mk'],
+                'sks' => $nilai['sks'],
+                'nilai_tugas' => $nilai['nilai_tugas'],
+                'nilai_uts' => $nilai['nilai_uts'],
+                'nilai_uas' => $nilai['nilai_uas'],
+                'nilai_akhir' => $nilai['nilai_akhir']
+            ]);
+            
+            $result = $emailHelper->send(
+                $nilai['email'],
+                $nilai['nama'],
+                'Nilai Anda Telah Diverifikasi',
+                $body
+            );
+            
+            $email_sent = $result['success'];
+        }
+        
+        return [
+            'success' => true,
+            'email_sent' => $email_sent
+        ];
+        
+    } catch (PDOException $e) {
+        return ['success' => false, 'message' => $e->getMessage()];
+    }
+}
+
+/**
+ * Kirim email akun baru
+ */
+public function sendAkunBaruEmail($user_id, $plain_password) {
+    try {
+        $stmt = $this->pdo->prepare("SELECT * FROM users WHERE id = ?");
+        $stmt->execute([$user_id]);
+        $user = $stmt->fetch();
+        
+        if (!$user || empty($user['email'])) {
+            return ['success' => false, 'message' => 'User tidak ditemukan atau email kosong'];
+        }
+        
+        require_once __DIR__ . '/../helper/EmailHelper.php';
+        require_once __DIR__ . '/../template/email/akun_baru.php';
+        
+        $emailHelper = new EmailHelper();
+        $body = renderAkunBaru([
+            'nama' => $user['nama'],
+            'username' => $user['username'],
+            'password' => $plain_password,
+            'role' => $user['role']
+        ]);
+        
+        return $emailHelper->send(
+            $user['email'],
+            $user['nama'],
+            'Akun SIMAK Anda Telah Dibuat',
+            $body
+        );
+        
+    } catch (PDOException $e) {
+        return ['success' => false, 'message' => $e->getMessage()];
+    }
+}
 }
 ?>

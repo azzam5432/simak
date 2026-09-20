@@ -1,0 +1,10 @@
+# Kredensial lokal - JANGAN di-commit
+.env
+
+# Log runtime (berisi alamat email pengguna)
+logs/
+*.log
+
+# File temporary testing
+test_output_tmp.xlsx
+test_xlsx_tmp.php

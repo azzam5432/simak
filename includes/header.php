@@ -1,6 +1,7 @@
 <?php
 // ============================================
 // includes/header.php
+// Template Header & Navigation
 // ============================================
 
 require_once __DIR__ . '/../config/session.php';
@@ -89,6 +90,14 @@ $initial = strtoupper(substr($nama, 0, 1));
                         <?php endif; ?>
                     </a>
                 </li>
+                
+                <!-- MENU LAPORAN AKADEMIK -->
+                <li>
+                    <a href="/simak_app/public/admin/laporan.php" class="<?= strpos($current_page, 'laporan') !== false ? 'active' : '' ?>">
+                        <i class="fas fa-file-alt"></i> Laporan
+                    </a>
+                </li>
+                
                 <li>
                     <a href="/simak_app/public/admin/broadcast.php" class="<?= $current_page === 'broadcast.php' ? 'active' : '' ?>">
                         <i class="fas fa-bullhorn"></i> Broadcast

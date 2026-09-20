@@ -1,9 +1,19 @@
 <?php
 
-$host = 'localhost';
-$db_name = 'simak_db';
-$username = 'root';
-$password = '';
+// ============================================
+// config/database.php
+// Koneksi Database (dibaca dari environment variables / file .env)
+//
+// Nilai default di bawah adalah default XAMPP (development).
+// Untuk production, isi SIMAK_DB_* di file .env di server.
+// ============================================
+
+require_once __DIR__ . '/env.php';
+
+$host     = env('SIMAK_DB_HOST', 'localhost');
+$db_name  = env('SIMAK_DB_NAME', 'simak_db');
+$username = env('SIMAK_DB_USER', 'root');
+$password = env('SIMAK_DB_PASS', '');
 
 try {
     $pdo = new PDO("mysql:host=" . $host . ";dbname=" . $db_name, $username, $password);

@@ -156,15 +156,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    document.querySelectorAll('.btn-export-csv').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const table = document.querySelector(this.dataset.target || 'table');
-            if (table) {
-                exportTableToCSV(table, this.dataset.filename || 'export.csv');
-            }
-        });
-    });
-
     document.querySelectorAll('.auto-submit').forEach(el => {
         el.addEventListener('change', function() {
             this.closest('form').submit();
@@ -438,36 +429,6 @@ function showToast(message, type = 'success') {
             }
         }, 300);
     }, 4000);
-}
-
-function exportTableToCSV(table, filename = 'export.csv') {
-    const rows = table.querySelectorAll('tr');
-    const csvRows = [];
-    
-    rows.forEach(row => {
-        const cells = row.querySelectorAll('th, td');
-        const values = Array.from(cells).map(cell => {
-            let text = cell.textContent.trim();
-            if (text.includes(',') || text.includes('"') || text.includes('\n')) {
-                text = `"${text.replace(/"/g, '""')}"`;
-            }
-            return text;
-        });
-        csvRows.push(values.join(','));
-    });
-    
-    const csvString = csvRows.join('\n');
-    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-    
-    showToast('Data berhasil diexport ke CSV', 'success');
 }
 
 function printElement(elementId) {
