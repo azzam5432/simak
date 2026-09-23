@@ -11,11 +11,13 @@ error_reporting(E_ALL);
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/session.php';
 require_once __DIR__ . '/../../controllers/AdminController.php';
+require_once __DIR__ . '/../../controllers/MasterDataController.php';
 
 checkAccess(['admin']);
 
 $page_title = 'Data Mata Kuliah';
 $adminController = new AdminController($pdo);
+$masterController = new MasterDataController($pdo);
 
 // Proses CRUD
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -53,12 +55,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Ambil data
 $matakuliah = $adminController->getAllMatakuliah();
+$fakultas_list = $masterController->getFakultasList();
 
 // Ambil daftar dosen untuk dropdown
 $dosenList = [];
 try {
     $stmt = $pdo->prepare("
-        SELECT d.id, u.nama, d.nidn
+        SELECT d.id, u.nama, d.nid
         FROM dosen d
         JOIN users u ON d.user_id = u.id
         ORDER BY u.nama ASC
@@ -91,6 +94,7 @@ include __DIR__ . '/../../includes/header.php';
                 <th>Nama Mata Kuliah</th>
                 <th>SKS</th>
                 <th>Semester</th>
+                <th>Jurusan</th>
                 <th>Dosen</th>
                 <th>Ruang</th>
                 <th>Jadwal</th>
@@ -105,6 +109,14 @@ include __DIR__ . '/../../includes/header.php';
                         <td><?= htmlspecialchars($mk['nama_mk']) ?></td>
                         <td><?= $mk['sks'] ?></td>
                         <td><?= $mk['semester'] ?></td>
+                        <td>
+                            <?php if (!empty($mk['jurusan_nama'])): ?>
+                                <strong style="color: #2c3e50;"><?= htmlspecialchars($mk['jurusan_kode'] ?? '-') ?></strong><br>
+                                <small><?= htmlspecialchars($mk['jurusan_nama']) ?></small>
+                            <?php else: ?>
+                                -
+                            <?php endif; ?>
+                        </td>
                         <td><?= htmlspecialchars($mk['dosen_nama'] ?? '-') ?></td>
                         <td><?= htmlspecialchars($mk['ruang'] ?? '-') ?></td>
                         <td>
@@ -130,7 +142,7 @@ include __DIR__ . '/../../includes/header.php';
                 <?php endforeach; ?>
             <?php else: ?>
                 <tr>
-                    <td colspan="8" style="text-align: center; color: #7f8c8d; padding: 30px;">
+                    <td colspan="9" style="text-align: center; color: #7f8c8d; padding: 30px;">
                         <i class="fas fa-inbox"></i> Belum ada data mata kuliah
                     </td>
                 </tr>
@@ -163,20 +175,31 @@ include __DIR__ . '/../../includes/header.php';
                 <label>Nama Mata Kuliah <span style="color: #e74c3c;">*</span></label>
                 <input type="text" name="nama_mk" required>
             </div>
-            <div class="form-group">
-                <label>SKS <span style="color: #e74c3c;">*</span></label>
-                <input type="number" name="sks" min="1" max="6" value="3" required>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="form-group">
+                    <label>SKS <span style="color: #e74c3c;">*</span></label>
+                    <input type="number" name="sks" min="1" max="6" value="3" required>
+                </div>
+                <div class="form-group">
+                    <label>Semester <span style="color: #e74c3c;">*</span></label>
+                    <input type="number" name="semester" min="1" max="8" value="1" required>
+                </div>
             </div>
             <div class="form-group">
-                <label>Semester <span style="color: #e74c3c;">*</span></label>
-                <input type="number" name="semester" min="1" max="8" value="1" required>
+                <label>Fakultas <span style="color: #e74c3c;">*</span></label>
+                <select id="tambah_fakultas" required onchange="loadJurusan('tambah', this.value)">
+                    <option value="">-- Pilih Fakultas --</option>
+                    <?php foreach ($fakultas_list as $f): ?>
+                        <option value="<?= $f['id'] ?>">
+                            <?= htmlspecialchars($f['kode']) ?> - <?= htmlspecialchars($f['nama']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
             </div>
             <div class="form-group">
-                <label>Program Studi <span style="color: #e74c3c;">*</span></label>
-                <select name="program_studi" required>
-                    <option value="Teknik Informatika">Teknik Informatika</option>
-                    <option value="Sistem Informasi">Sistem Informasi</option>
-                    <option value="Manajemen Informatika">Manajemen Informatika</option>
+                <label>Jurusan <span style="color: #e74c3c;">*</span></label>
+                <select name="jurusan_id" id="tambah_jurusan" required>
+                    <option value="">-- Pilih Fakultas Dulu --</option>
                 </select>
             </div>
             <div class="form-group">
@@ -185,7 +208,7 @@ include __DIR__ . '/../../includes/header.php';
                     <option value="">-- Pilih Dosen --</option>
                     <?php foreach ($dosenList as $d): ?>
                         <option value="<?= $d['id'] ?>">
-                            <?= htmlspecialchars($d['nama']) ?> (<?= htmlspecialchars($d['nidn']) ?>)
+                            <?= htmlspecialchars($d['nama']) ?> (<?= htmlspecialchars($d['nid']) ?>)
                         </option>
                     <?php endforeach; ?>
                 </select>
@@ -258,20 +281,31 @@ include __DIR__ . '/../../includes/header.php';
                 <label>Nama Mata Kuliah <span style="color: #e74c3c;">*</span></label>
                 <input type="text" name="nama_mk" id="edit_nama_mk" required>
             </div>
-            <div class="form-group">
-                <label>SKS <span style="color: #e74c3c;">*</span></label>
-                <input type="number" name="sks" id="edit_sks" min="1" max="6" required>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="form-group">
+                    <label>SKS <span style="color: #e74c3c;">*</span></label>
+                    <input type="number" name="sks" id="edit_sks" min="1" max="6" required>
+                </div>
+                <div class="form-group">
+                    <label>Semester <span style="color: #e74c3c;">*</span></label>
+                    <input type="number" name="semester" id="edit_semester" min="1" max="8" required>
+                </div>
             </div>
             <div class="form-group">
-                <label>Semester <span style="color: #e74c3c;">*</span></label>
-                <input type="number" name="semester" id="edit_semester" min="1" max="8" required>
+                <label>Fakultas <span style="color: #e74c3c;">*</span></label>
+                <select id="edit_fakultas" required onchange="loadJurusan('edit', this.value)">
+                    <option value="">-- Pilih Fakultas --</option>
+                    <?php foreach ($fakultas_list as $f): ?>
+                        <option value="<?= $f['id'] ?>">
+                            <?= htmlspecialchars($f['kode']) ?> - <?= htmlspecialchars($f['nama']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
             </div>
             <div class="form-group">
-                <label>Program Studi <span style="color: #e74c3c;">*</span></label>
-                <select name="program_studi" id="edit_program_studi" required>
-                    <option value="Teknik Informatika">Teknik Informatika</option>
-                    <option value="Sistem Informasi">Sistem Informasi</option>
-                    <option value="Manajemen Informatika">Manajemen Informatika</option>
+                <label>Jurusan <span style="color: #e74c3c;">*</span></label>
+                <select name="jurusan_id" id="edit_jurusan" required>
+                    <option value="">-- Pilih Fakultas Dulu --</option>
                 </select>
             </div>
             <div class="form-group">
@@ -280,7 +314,7 @@ include __DIR__ . '/../../includes/header.php';
                     <option value="">-- Pilih Dosen --</option>
                     <?php foreach ($dosenList as $d): ?>
                         <option value="<?= $d['id'] ?>">
-                            <?= htmlspecialchars($d['nama']) ?> (<?= htmlspecialchars($d['nidn']) ?>)
+                            <?= htmlspecialchars($d['nama']) ?> (<?= htmlspecialchars($d['nid']) ?>)
                         </option>
                     <?php endforeach; ?>
                 </select>
@@ -344,6 +378,35 @@ function closeModal(modalId) {
 }
 
 // ============================================
+// LOAD JURUSAN BY FAKULTAS (AJAX)
+// ============================================
+
+function loadJurusan(type, fakultas_id) {
+    const jurusanSelect = document.getElementById(type + '_jurusan');
+    
+    if (!fakultas_id) {
+        jurusanSelect.innerHTML = '<option value="">-- Pilih Fakultas Dulu --</option>';
+        return;
+    }
+    
+    jurusanSelect.innerHTML = '<option value="">Loading...</option>';
+    
+    fetch('/simak_app/public/admin/get_jurusan.php?fakultas_id=' + fakultas_id)
+        .then(response => response.json())
+        .then(data => {
+            let options = '<option value="">-- Pilih Jurusan --</option>';
+            data.forEach(j => {
+                options += `<option value="${j.id}">${j.kode} - ${j.nama} (${j.jenjang})</option>`;
+            });
+            jurusanSelect.innerHTML = options;
+        })
+        .catch(error => {
+            jurusanSelect.innerHTML = '<option value="">Gagal memuat</option>';
+            console.error('Error:', error);
+        });
+}
+
+// ============================================
 // FUNGSI EDIT MATA KULIAH
 // ============================================
 
@@ -359,7 +422,31 @@ function editMatakuliah(id) {
                 document.getElementById('edit_nama_mk').value = data.nama_mk;
                 document.getElementById('edit_sks').value = data.sks;
                 document.getElementById('edit_semester').value = data.semester;
-                document.getElementById('edit_program_studi').value = data.program_studi;
+                
+                // Set fakultas, lalu load jurusan dan pilih jurusan MK
+                document.getElementById('edit_fakultas').value = data.fakultas_id || '';
+                
+                const jurusanSelect = document.getElementById('edit_jurusan');
+                if (data.fakultas_id) {
+                    jurusanSelect.innerHTML = '<option value="">Loading...</option>';
+                    fetch('/simak_app/public/admin/get_jurusan.php?fakultas_id=' + data.fakultas_id)
+                        .then(response => response.json())
+                        .then(jurusanData => {
+                            let options = '<option value="">-- Pilih Jurusan --</option>';
+                            jurusanData.forEach(j => {
+                                const selected = (j.id == data.jurusan_id) ? 'selected' : '';
+                                options += `<option value="${j.id}" ${selected}>${j.kode} - ${j.nama} (${j.jenjang})</option>`;
+                            });
+                            jurusanSelect.innerHTML = options;
+                        })
+                        .catch(error => {
+                            jurusanSelect.innerHTML = '<option value="">Gagal memuat</option>';
+                            console.error('Error:', error);
+                        });
+                } else {
+                    jurusanSelect.innerHTML = '<option value="">-- Pilih Fakultas Dulu --</option>';
+                }
+                
                 document.getElementById('edit_dosen_id').value = data.dosen_id || '';
                 document.getElementById('edit_ruang').value = data.ruang || '';
                 document.getElementById('edit_hari').value = data.hari || '';

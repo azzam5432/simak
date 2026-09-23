@@ -90,7 +90,7 @@ class MahasiswaController {
     
     public function getJadwalKuliah() {
         $stmt = $this->pdo->prepare("
-            SELECT c.*, u.nama as dosen_nama, d.nidn
+            SELECT c.*, u.nama as dosen_nama, d.nid
             FROM irs
             JOIN courses c ON irs.course_id = c.id
             LEFT JOIN dosen d ON c.dosen_id = d.id
@@ -248,9 +248,9 @@ class MahasiswaController {
             LEFT JOIN dosen d ON c.dosen_id = d.id
             LEFT JOIN users u ON d.user_id = u.id
             WHERE c.semester = ? 
-            AND c.program_studi = (
-                SELECT program_studi FROM mahasiswa WHERE id = ?
-            )
+            AND (c.jurusan_id = (
+                SELECT jurusan_id FROM mahasiswa WHERE id = ?
+            ) OR c.jurusan_id IS NULL)
             AND c.id NOT IN (
                 SELECT course_id FROM irs 
                 WHERE mahasiswa_id = ? AND semester = ?
@@ -340,13 +340,14 @@ class MahasiswaController {
             SELECT irs.*, 
                    c.kode_mk, c.nama_mk, c.sks, c.ruang, 
                    u.nama as dosen_nama,
-                   m.nim, m.program_studi, m.semester as mhs_semester,
+                   m.nim, j.nama as jurusan_nama, m.semester as mhs_semester,
                    us.nama as mahasiswa_nama
             FROM irs
             JOIN courses c ON irs.course_id = c.id
             LEFT JOIN dosen d ON c.dosen_id = d.id
             LEFT JOIN users u ON d.user_id = u.id
             JOIN mahasiswa m ON irs.mahasiswa_id = m.id
+            LEFT JOIN jurusan j ON m.jurusan_id = j.id
             JOIN users us ON m.user_id = us.id
             WHERE irs.mahasiswa_id = ? AND irs.semester = ?
             ORDER BY c.kode_mk ASC

@@ -97,6 +97,16 @@ $initial = strtoupper(substr($nama, 0, 1));
                         <i class="fas fa-file-alt"></i> Laporan
                     </a>
                 </li>
+                <li>
+                    <a href="/simak_app/public/admin/fakultas.php" class="<?= $current_page === 'fakultas.php' ? 'active' : '' ?>">
+                        <i class="fas fa-university"></i> Fakultas
+                    </a>
+                </li>
+                <li>
+                    <a href="/simak_app/public/admin/jurusan.php" class="<?= $current_page === 'jurusan.php' ? 'active' : '' ?>">
+                        <i class="fas fa-book"></i> Jurusan
+                    </a>
+                </li>
                 
                 <li>
                     <a href="/simak_app/public/admin/broadcast.php" class="<?= $current_page === 'broadcast.php' ? 'active' : '' ?>">

@@ -13,13 +13,13 @@ class AdminController {
     public function __construct($pdo) {
         $this->pdo = $pdo;
     }
-    
+
     // ============================================
-    // MANAJEMEN MAHASISWA
+    // MANAJEMEN MAHASISWA (V2 - Fakultas/Jurusan)
     // ============================================
     
     /**
-     * Get semua mahasiswa dengan alias yang jelas
+     * Get semua mahasiswa dengan join fakultas & jurusan
      */
     public function getAllMahasiswa() {
         $stmt = $this->pdo->prepare("
@@ -31,12 +31,21 @@ class AdminController {
                 u.role,
                 m.id as mahasiswa_id,
                 m.nim,
-                m.angkatan,
-                m.program_studi,
+                m.tahun_ajaran,
+                m.tingkat,
                 m.semester,
-                m.ipk
+                m.ipk,
+                f.id as fakultas_id,
+                f.kode as fakultas_kode,
+                f.nama as fakultas_nama,
+                j.id as jurusan_id,
+                j.kode as jurusan_kode,
+                j.nama as jurusan_nama,
+                j.jenjang
             FROM users u
             JOIN mahasiswa m ON u.id = m.user_id
+            LEFT JOIN fakultas f ON m.fakultas_id = f.id
+            LEFT JOIN jurusan j ON m.jurusan_id = j.id
             ORDER BY m.nim ASC
         ");
         $stmt->execute();
@@ -44,7 +53,7 @@ class AdminController {
     }
     
     /**
-     * Get mahasiswa by ID (dari tabel mahasiswa)
+     * Get mahasiswa by ID
      */
     public function getMahasiswaById($mahasiswa_id) {
         $stmt = $this->pdo->prepare("
@@ -56,12 +65,21 @@ class AdminController {
                 u.role,
                 m.id as mahasiswa_id,
                 m.nim,
-                m.angkatan,
-                m.program_studi,
+                m.tahun_ajaran,
+                m.tingkat,
                 m.semester,
-                m.ipk
+                m.ipk,
+                m.fakultas_id,
+                m.jurusan_id,
+                f.kode as fakultas_kode,
+                f.nama as fakultas_nama,
+                j.kode as jurusan_kode,
+                j.nama as jurusan_nama,
+                j.jenjang
             FROM users u
             JOIN mahasiswa m ON u.id = m.user_id
+            LEFT JOIN fakultas f ON m.fakultas_id = f.id
+            LEFT JOIN jurusan j ON m.jurusan_id = j.id
             WHERE m.id = ?
         ");
         $stmt->execute([$mahasiswa_id]);
@@ -69,40 +87,35 @@ class AdminController {
     }
     
     /**
-     * Tambah mahasiswa baru
+     * Create mahasiswa baru
+     * Semester otomatis dihitung dari tingkat + bulan
      */
     public function createMahasiswa($data) {
         try {
             $this->pdo->beginTransaction();
             
-            // Bersihkan data
             $nim = trim(preg_replace('/[^a-zA-Z0-9]/', '', $data['nim']));
             $username = trim($data['username']);
-            $nama = trim($data['nama']);
-            $email = trim($data['email'] ?? '');
-            $angkatan = intval($data['angkatan']);
-            $semester = intval($data['semester'] ?? 1);
-            $program_studi = trim($data['program_studi']);
-            
-            if (empty($nim)) {
-                return ['success' => false, 'message' => 'NIM tidak boleh kosong!'];
-            }
-            if (empty($username)) {
-                return ['success' => false, 'message' => 'Username tidak boleh kosong!'];
-            }
             
             // Cek duplikat
             $stmt = $this->pdo->prepare("SELECT id FROM users WHERE username = ?");
             $stmt->execute([$username]);
             if ($stmt->fetch()) {
-                return ['success' => false, 'message' => 'Username "' . $username . '" sudah digunakan!'];
+                $this->pdo->rollBack();
+                return ['success' => false, 'message' => 'Username sudah digunakan!'];
             }
             
             $stmt = $this->pdo->prepare("SELECT id FROM mahasiswa WHERE nim = ?");
             $stmt->execute([$nim]);
             if ($stmt->fetch()) {
-                return ['success' => false, 'message' => 'NIM "' . $nim . '" sudah terdaftar!'];
+                $this->pdo->rollBack();
+                return ['success' => false, 'message' => 'NIM sudah terdaftar!'];
             }
+            
+            // Hitung tahun ajaran & semester otomatis
+            $tahun_ajaran = $data['tahun_ajaran'] ?? MasterDataController::getTahunAjaranOtomatis();
+            $tingkat = intval($data['tingkat'] ?? 1);
+            $semester = MasterDataController::getSemesterOtomatis($tingkat);
             
             // Insert ke users
             $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
@@ -110,18 +123,35 @@ class AdminController {
                 INSERT INTO users (username, password, nama, nip_nim, email, role)
                 VALUES (?, ?, ?, ?, ?, 'mahasiswa')
             ");
-            $stmt->execute([$username, $hashedPassword, $nama, $nim, $email]);
+            $stmt->execute([
+                $username,
+                $hashedPassword,
+                trim($data['nama']),
+                $nim,
+                trim($data['email'] ?? '')
+            ]);
             $userId = $this->pdo->lastInsertId();
             
             // Insert ke mahasiswa
             $stmt = $this->pdo->prepare("
-                INSERT INTO mahasiswa (user_id, nim, angkatan, program_studi, semester)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO mahasiswa (
+                    user_id, fakultas_id, jurusan_id, nim, 
+                    tahun_ajaran, tingkat, semester
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
             ");
-            $stmt->execute([$userId, $nim, $angkatan, $program_studi, $semester]);
+            $stmt->execute([
+                $userId,
+                intval($data['fakultas_id']) ?: null,
+                intval($data['jurusan_id']) ?: null,
+                $nim,
+                $tahun_ajaran,
+                $tingkat,
+                $semester
+            ]);
             
             $this->pdo->commit();
             return ['success' => true, 'id' => $this->pdo->lastInsertId()];
+            
         } catch (PDOException $e) {
             $this->pdo->rollBack();
             return ['success' => false, 'message' => $e->getMessage()];
@@ -130,28 +160,24 @@ class AdminController {
     
     /**
      * Update mahasiswa
+     * Semester otomatis dihitung ulang jika tingkat berubah
      */
     public function updateMahasiswa($mahasiswa_id, $data) {
         try {
             $this->pdo->beginTransaction();
             
+            // Get user_id
             $stmt = $this->pdo->prepare("SELECT user_id FROM mahasiswa WHERE id = ?");
             $stmt->execute([$mahasiswa_id]);
             $mahasiswa = $stmt->fetch();
             
             if (!$mahasiswa) {
+                $this->pdo->rollBack();
                 return ['success' => false, 'message' => 'Mahasiswa tidak ditemukan'];
             }
             
             $userId = $mahasiswa['user_id'];
             $nim = trim(preg_replace('/[^a-zA-Z0-9]/', '', $data['nim']));
-            
-            // Cek duplikat NIM
-            $stmt = $this->pdo->prepare("SELECT id FROM mahasiswa WHERE nim = ? AND id != ?");
-            $stmt->execute([$nim, $mahasiswa_id]);
-            if ($stmt->fetch()) {
-                return ['success' => false, 'message' => 'NIM "' . $nim . '" sudah digunakan!'];
-            }
             
             // Update users
             $sql = "UPDATE users SET nama = ?, email = ?";
@@ -168,22 +194,34 @@ class AdminController {
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute($params);
             
+            // Hitung semester otomatis
+            $tingkat = intval($data['tingkat']);
+            $semester = MasterDataController::getSemesterOtomatis($tingkat);
+            
             // Update mahasiswa
             $stmt = $this->pdo->prepare("
                 UPDATE mahasiswa 
-                SET nim = ?, angkatan = ?, program_studi = ?, semester = ?
+                SET nim = ?, 
+                    fakultas_id = ?, 
+                    jurusan_id = ?, 
+                    tahun_ajaran = ?, 
+                    tingkat = ?, 
+                    semester = ?
                 WHERE id = ?
             ");
             $stmt->execute([
                 $nim,
-                intval($data['angkatan']),
-                trim($data['program_studi']),
-                intval($data['semester']),
+                intval($data['fakultas_id']) ?: null,
+                intval($data['jurusan_id']) ?: null,
+                trim($data['tahun_ajaran']),
+                $tingkat,
+                $semester,
                 $mahasiswa_id
             ]);
             
             $this->pdo->commit();
             return ['success' => true];
+            
         } catch (PDOException $e) {
             $this->pdo->rollBack();
             return ['success' => false, 'message' => $e->getMessage()];
@@ -191,7 +229,7 @@ class AdminController {
     }
     
     /**
-     * Hapus mahasiswa
+     * Delete mahasiswa (sama seperti sebelumnya)
      */
     public function deleteMahasiswa($mahasiswa_id) {
         try {
@@ -213,6 +251,7 @@ class AdminController {
             
             $this->pdo->commit();
             return ['success' => true];
+            
         } catch (PDOException $e) {
             $this->pdo->rollBack();
             return ['success' => false, 'message' => $e->getMessage()];
@@ -220,9 +259,12 @@ class AdminController {
     }
     
     // ============================================
-    // MANAJEMEN DOSEN
+    // MANAJEMEN DOSEN (REVISI)
     // ============================================
     
+    /**
+     * Get semua dosen dengan join fakultas & jurusan
+     */
     public function getAllDosen() {
         $stmt = $this->pdo->prepare("
             SELECT 
@@ -230,19 +272,29 @@ class AdminController {
                 u.username,
                 u.nama,
                 u.email,
-                u.role,
-                d.id as dosen_id,        -- ← Alias jelas: dosen_id
-                d.nidn,
-                d.program_studi,
-                d.jabatan
+                d.id as dosen_id,
+                d.nid,
+                d.fakultas_id,
+                d.jurusan_id,
+                f.nama as fakultas_nama,
+                f.kode as fakultas_kode,
+                j.nama as jurusan_nama,
+                j.kode as jurusan_kode,
+                j.jenjang
             FROM users u
             JOIN dosen d ON u.id = d.user_id
-            ORDER BY d.nidn ASC
+            LEFT JOIN fakultas f ON d.fakultas_id = f.id
+            LEFT JOIN jurusan j ON d.jurusan_id = j.id
+            WHERE u.role = 'dosen'
+            ORDER BY d.nid ASC
         ");
         $stmt->execute();
         return $stmt->fetchAll();
     }
     
+    /**
+     * Get dosen by ID
+     */
     public function getDosenById($dosen_id) {
         $stmt = $this->pdo->prepare("
             SELECT 
@@ -250,25 +302,68 @@ class AdminController {
                 u.username,
                 u.nama,
                 u.email,
-                u.role,
                 d.id as dosen_id,
-                d.nidn,
-                d.program_studi,
-                d.jabatan
+                d.nid,
+                d.fakultas_id,
+                d.jurusan_id,
+                f.nama as fakultas_nama,
+                j.nama as jurusan_nama
             FROM users u
             JOIN dosen d ON u.id = d.user_id
-            WHERE d.id = ?      -- ← Pakai d.id, BUKAN u.id
+            LEFT JOIN fakultas f ON d.fakultas_id = f.id
+            LEFT JOIN jurusan j ON d.jurusan_id = j.id
+            WHERE d.id = ? AND u.role = 'dosen'
         ");
         $stmt->execute([$dosen_id]);
         return $stmt->fetch();
     }
+    
+    /**
+     * Get fakultas list untuk dropdown
+     */
+    public function getFakultasList() {
+        $stmt = $this->pdo->prepare("
+            SELECT id, kode, nama 
+            FROM fakultas 
+            ORDER BY nama ASC
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+    
+    /**
+     * Get jurusan list by fakultas
+     */
+    public function getJurusanByFakultas($fakultas_id) {
+        $stmt = $this->pdo->prepare("
+            SELECT id, kode, nama, jenjang 
+            FROM jurusan 
+            WHERE fakultas_id = ?
+            ORDER BY nama ASC
+        ");
+        $stmt->execute([$fakultas_id]);
+        return $stmt->fetchAll();
+    }
+    
+    /**
+     * Tambah dosen baru
+     */
     public function createDosen($data) {
         try {
             $this->pdo->beginTransaction();
             
-            // Bersihkan data
-            $nidn = trim(preg_replace('/[^a-zA-Z0-9]/', '', $data['nidn']));
+            // Validasi input
             $username = trim($data['username']);
+            $nid = trim($data['nid']);
+            $nama = trim($data['nama']);
+            $email = trim($data['email']);
+            $fakultas_id = intval($data['fakultas_id']);
+            $jurusan_id = intval($data['jurusan_id']);
+            
+            // Cek NID hanya angka
+            if (!preg_match('/^[0-9]+$/', $nid)) {
+                return ['success' => false, 'message' => 'NID hanya boleh berisi angka'];
+            }
             
             // Cek duplikat username
             $stmt = $this->pdo->prepare("SELECT id FROM users WHERE username = ?");
@@ -277,11 +372,18 @@ class AdminController {
                 return ['success' => false, 'message' => 'Username sudah digunakan!'];
             }
             
-            // Cek duplikat NIDN
-            $stmt = $this->pdo->prepare("SELECT id FROM dosen WHERE nidn = ?");
-            $stmt->execute([$nidn]);
+            // Cek duplikat NID
+            $stmt = $this->pdo->prepare("SELECT id FROM dosen WHERE nid = ?");
+            $stmt->execute([$nid]);
             if ($stmt->fetch()) {
-                return ['success' => false, 'message' => 'NIDN sudah terdaftar!'];
+                return ['success' => false, 'message' => 'NID sudah terdaftar!'];
+            }
+            
+            // Cek duplikat email
+            $stmt = $this->pdo->prepare("SELECT id FROM users WHERE email = ? AND email != ''");
+            $stmt->execute([$email]);
+            if ($stmt->fetch()) {
+                return ['success' => false, 'message' => 'Email sudah digunakan!'];
             }
             
             // Insert ke users
@@ -290,29 +392,24 @@ class AdminController {
                 INSERT INTO users (username, password, nama, nip_nim, email, role)
                 VALUES (?, ?, ?, ?, ?, 'dosen')
             ");
-            $stmt->execute([
-                $username,
-                $hashedPassword,
-                trim($data['nama']),
-                $nidn,
-                trim($data['email'] ?? '')
-            ]);
+            $stmt->execute([$username, $hashedPassword, $nama, $nid, $email]);
             $userId = $this->pdo->lastInsertId();
             
             // Insert ke dosen
             $stmt = $this->pdo->prepare("
-                INSERT INTO dosen (user_id, nidn, program_studi, jabatan)
+                INSERT INTO dosen (user_id, nid, fakultas_id, jurusan_id)
                 VALUES (?, ?, ?, ?)
             ");
-            $stmt->execute([
-                $userId,
-                $nidn,
-                trim($data['program_studi']),
-                trim($data['jabatan'] ?? 'Lektor')
-            ]);
+            $stmt->execute([$userId, $nid, $fakultas_id, $jurusan_id]);
+            $dosenId = $this->pdo->lastInsertId();
             
             $this->pdo->commit();
-            return ['success' => true, 'id' => $this->pdo->lastInsertId()];
+            
+            return [
+                'success' => true,
+                'dosen_id' => $dosenId,
+                'user_id' => $userId
+            ];
         } catch (PDOException $e) {
             $this->pdo->rollBack();
             return ['success' => false, 'message' => $e->getMessage()];
@@ -320,13 +417,13 @@ class AdminController {
     }
     
     /**
-     * Update dosen (by dosen_id)
+     * Update dosen
      */
     public function updateDosen($dosen_id, $data) {
         try {
             $this->pdo->beginTransaction();
             
-            // Get user_id dari dosen
+            // Get user_id
             $stmt = $this->pdo->prepare("SELECT user_id FROM dosen WHERE id = ?");
             $stmt->execute([$dosen_id]);
             $dosen = $stmt->fetch();
@@ -337,12 +434,35 @@ class AdminController {
             
             $userId = $dosen['user_id'];
             
-            // Bersihkan NIDN
-            $nidn = trim(preg_replace('/[^a-zA-Z0-9]/', '', $data['nidn']));
+            // Validasi input
+            $nid = trim($data['nid']);
+            $nama = trim($data['nama']);
+            $email = trim($data['email']);
+            $fakultas_id = intval($data['fakultas_id']);
+            $jurusan_id = intval($data['jurusan_id']);
+            
+            // Cek NID hanya angka
+            if (!preg_match('/^[0-9]+$/', $nid)) {
+                return ['success' => false, 'message' => 'NID hanya boleh berisi angka'];
+            }
+            
+            // Cek duplikat NID (selain diri sendiri)
+            $stmt = $this->pdo->prepare("SELECT id FROM dosen WHERE nid = ? AND id != ?");
+            $stmt->execute([$nid, $dosen_id]);
+            if ($stmt->fetch()) {
+                return ['success' => false, 'message' => 'NID sudah digunakan dosen lain!'];
+            }
+            
+            // Cek duplikat email (selain diri sendiri)
+            $stmt = $this->pdo->prepare("SELECT id FROM users WHERE email = ? AND id != ? AND email != ''");
+            $stmt->execute([$email, $userId]);
+            if ($stmt->fetch()) {
+                return ['success' => false, 'message' => 'Email sudah digunakan user lain!'];
+            }
             
             // Update users
             $sql = "UPDATE users SET nama = ?, email = ?";
-            $params = [trim($data['nama']), trim($data['email'] ?? '')];
+            $params = [$nama, $email];
             
             if (!empty($data['password'])) {
                 $sql .= ", password = ?";
@@ -358,15 +478,10 @@ class AdminController {
             // Update dosen
             $stmt = $this->pdo->prepare("
                 UPDATE dosen 
-                SET nidn = ?, program_studi = ?, jabatan = ?
+                SET nid = ?, fakultas_id = ?, jurusan_id = ?
                 WHERE id = ?
             ");
-            $stmt->execute([
-                $nidn,
-                trim($data['program_studi']),
-                trim($data['jabatan']),
-                $dosen_id   // ← Pakai dosen_id
-            ]);
+            $stmt->execute([$nid, $fakultas_id, $jurusan_id, $dosen_id]);
             
             $this->pdo->commit();
             return ['success' => true];
@@ -377,11 +492,11 @@ class AdminController {
     }
     
     /**
-     * Hapus dosen (by dosen_id)
+     * Hapus dosen
      */
     public function deleteDosen($dosen_id) {
         try {
-            // Cek apakah dosen ada
+            // Cek dosen ada
             $stmt = $this->pdo->prepare("SELECT user_id FROM dosen WHERE id = ?");
             $stmt->execute([$dosen_id]);
             $dosen = $stmt->fetch();
@@ -416,11 +531,15 @@ class AdminController {
     
     public function getAllMatakuliah() {
         $stmt = $this->pdo->prepare("
-            SELECT c.*, u.nama as dosen_nama, d.nidn as dosen_nidn,
-                d.id as dosen_id
+            SELECT c.*, u.nama as dosen_nama, d.nid as dosen_nid,
+                d.id as dosen_id,
+                j.kode as jurusan_kode, j.nama as jurusan_nama, j.jenjang,
+                f.kode as fakultas_kode, f.nama as fakultas_nama
             FROM courses c
             LEFT JOIN dosen d ON c.dosen_id = d.id
             LEFT JOIN users u ON d.user_id = u.id
+            LEFT JOIN jurusan j ON c.jurusan_id = j.id
+            LEFT JOIN fakultas f ON j.fakultas_id = f.id
             ORDER BY c.kode_mk ASC
         ");
         $stmt->execute();
@@ -429,10 +548,12 @@ class AdminController {
     
     public function getMatakuliahById($id) {
         $stmt = $this->pdo->prepare("
-            SELECT c.*, u.nama as dosen_nama, d.nidn as dosen_nidn
+            SELECT c.*, u.nama as dosen_nama, d.nid as dosen_nid,
+                j.fakultas_id, j.kode as jurusan_kode, j.nama as jurusan_nama
             FROM courses c
             LEFT JOIN dosen d ON c.dosen_id = d.id
             LEFT JOIN users u ON d.user_id = u.id
+            LEFT JOIN jurusan j ON c.jurusan_id = j.id
             WHERE c.id = ?
         ");
         $stmt->execute([$id]);
@@ -449,7 +570,7 @@ class AdminController {
             
             $stmt = $this->pdo->prepare("
                 INSERT INTO courses (
-                    kode_mk, nama_mk, sks, semester, program_studi,
+                    kode_mk, nama_mk, sks, semester, jurusan_id,
                     dosen_id, ruang, hari, jam_mulai, jam_selesai, kapasitas
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
@@ -458,7 +579,7 @@ class AdminController {
                 trim($data['nama_mk']),
                 intval($data['sks']),
                 intval($data['semester']),
-                trim($data['program_studi']),
+                intval($data['jurusan_id']) ?: null,
                 !empty($data['dosen_id']) ? intval($data['dosen_id']) : null,
                 trim($data['ruang'] ?? ''),
                 trim($data['hari'] ?? ''),
@@ -481,7 +602,7 @@ class AdminController {
                     nama_mk = ?,
                     sks = ?,
                     semester = ?,
-                    program_studi = ?,
+                    jurusan_id = ?,
                     dosen_id = ?,
                     ruang = ?,
                     hari = ?,
@@ -495,7 +616,7 @@ class AdminController {
                 trim($data['nama_mk']),
                 intval($data['sks']),
                 intval($data['semester']),
-                trim($data['program_studi']),
+                intval($data['jurusan_id']) ?: null,
                 !empty($data['dosen_id']) ? intval($data['dosen_id']) : null,
                 trim($data['ruang'] ?? ''),
                 trim($data['hari'] ?? ''),
@@ -529,14 +650,14 @@ class AdminController {
         $stmt = $this->pdo->prepare("
             SELECT irs.*, 
                    c.kode_mk, c.nama_mk, c.sks, c.ruang,
-                   m.nim, m.program_studi, m.semester as mhs_semester,
+                   m.nim, j.nama as jurusan_nama, m.semester as mhs_semester,
                    u.nama as mahasiswa_nama
             FROM irs
             JOIN courses c ON irs.course_id = c.id
             JOIN mahasiswa m ON irs.mahasiswa_id = m.id
+            LEFT JOIN jurusan j ON m.jurusan_id = j.id
             JOIN users u ON m.user_id = u.id
             WHERE irs.status = 'pending'
-            ORDER BY irs.created_at ASC, m.nim ASC
         ");
         $stmt->execute();
         return $stmt->fetchAll();
@@ -709,6 +830,8 @@ class AdminController {
         
         return $stats;
     }
+
+    
     
     // ============================================
     // DASHBOARD STATISTICS
@@ -743,7 +866,7 @@ public function resetUserPassword($user_id) {
         // Get data user
         $stmt = $this->pdo->prepare("
             SELECT u.*, 
-                   COALESCE(m.nim, d.nidn) as identifier
+                   COALESCE(m.nim, d.nid) as identifier
             FROM users u
             LEFT JOIN mahasiswa m ON u.id = m.user_id
             LEFT JOIN dosen d ON u.id = d.user_id

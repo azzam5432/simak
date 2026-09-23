@@ -1,16 +1,17 @@
 <?php
 // ============================================
 // public/admin/dosen_get.php
-// API untuk mengambil data dosen (AJAX)
+// API: Get data dosen untuk edit
 // ============================================
 
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/session.php';
 require_once __DIR__ . '/../../controllers/AdminController.php';
 
-// Cek akses admin
+header('Content-Type: application/json');
+
+// Cek akses
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit();
 }
@@ -18,7 +19,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 $id = $_GET['id'] ?? 0;
 
 if ($id <= 0) {
-    header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'ID tidak valid']);
     exit();
 }
@@ -26,17 +26,15 @@ if ($id <= 0) {
 $adminController = new AdminController($pdo);
 $dosen = $adminController->getDosenById($id);
 
-header('Content-Type: application/json');
-
 if ($dosen) {
     echo json_encode([
         'success' => true,
         'dosen_id' => $dosen['dosen_id'],
-        'nidn' => $dosen['nidn'],
+        'nid' => $dosen['nid'],
         'nama' => $dosen['nama'],
         'email' => $dosen['email'],
-        'program_studi' => $dosen['program_studi'],
-        'jabatan' => $dosen['jabatan']
+        'fakultas_id' => $dosen['fakultas_id'],
+        'jurusan_id' => $dosen['jurusan_id']
     ]);
 } else {
     echo json_encode([

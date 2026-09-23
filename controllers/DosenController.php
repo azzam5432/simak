@@ -112,9 +112,10 @@ class DosenController {
     
     public function getMahasiswaPerKelas($course_id) {
         $stmt = $this->pdo->prepare("
-            SELECT m.id AS mahasiswa_id, u.nama, m.nim, m.program_studi, m.semester
+            SELECT m.id AS mahasiswa_id, u.nama, m.nim, j.nama as program_studi, m.semester
             FROM irs
             JOIN mahasiswa m ON irs.mahasiswa_id = m.id
+            LEFT JOIN jurusan j ON m.jurusan_id = j.id
             JOIN users u ON m.user_id = u.id
             WHERE irs.course_id = ? AND irs.status = 'approved'
             ORDER BY m.nim ASC

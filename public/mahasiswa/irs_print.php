@@ -27,7 +27,7 @@ if (empty($irs_data)) {
 $total_sks = array_sum(array_column($irs_data, 'sks'));
 $mahasiswa_nama = $irs_data[0]['mahasiswa_nama'] ?? '';
 $nim = $irs_data[0]['nim'] ?? '';
-$program_studi = $irs_data[0]['program_studi'] ?? '';
+$program_studi = $irs_data[0]['jurusan_nama'] ?? '';
 ?>
 <!DOCTYPE html>
 <html>

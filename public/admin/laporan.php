@@ -63,8 +63,8 @@ if (isset($_GET['export'])) {
             break;
             
         case 'mahasiswa':
-            $program_studi = $_GET['program_studi'] ?? null;
-            $laporan = $laporanController->getLaporanMahasiswa($program_studi);
+            $jurusan_id = $_GET['jurusan_id'] ?? null;
+            $laporan = $laporanController->getLaporanMahasiswa($jurusan_id);
             $filename = 'laporan_mahasiswa_' . date('Ymd_His') . '.xlsx';
             $sheetName = 'Laporan Mahasiswa';
             $headers = ['NIM', 'Nama', 'Email', 'Prodi', 'Angkatan', 'Semester', 'Total SKS', 'IPK'];
@@ -96,7 +96,7 @@ $prodi_list = $laporanController->getProgramStudiList();
 $course_id = $_GET['course_id'] ?? null;
 $semester = $_GET['semester'] ?? null;
 $status = $_GET['status'] ?? null;
-$program_studi = $_GET['program_studi'] ?? null;
+$jurusan_id = $_GET['jurusan_id'] ?? null;
 
 // Data sesuai tab
 $data = [];
@@ -117,7 +117,7 @@ switch ($tab) {
         $statistik = $laporanController->getStatistikPresensi($course_id);
         break;
     case 'mahasiswa':
-        $data = $laporanController->getLaporanMahasiswa($program_studi);
+        $data = $laporanController->getLaporanMahasiswa($jurusan_id);
         break;
 }
 
@@ -267,6 +267,10 @@ include __DIR__ . '/../../includes/header.php';
                    class="btn btn-success btn-sm">
                     <i class="fas fa-file-excel"></i> Export Excel
                 </a>
+                <a href="/simak_app/public/admin/cetak_pdf.php?type=nilai&course_id=<?= $course_id ?>&semester=<?= $semester ?>" target="_blank"
+                    class="btn btn-danger btn-sm">
+                    <i class="fas fa-file-pdf"></i> PDF
+                </a>
             </div>
         </form>
         
@@ -407,6 +411,10 @@ include __DIR__ . '/../../includes/header.php';
                    class="btn btn-success btn-sm">
                     <i class="fas fa-file-excel"></i> Export Excel
                 </a>
+                <a href="/simak_app/public/admin/cetak_pdf.php?type=irs&semester=<?= $semester ?>&status=<?= $status ?>" target="_blank"
+                    class="btn btn-danger btn-sm">
+                    <i class="fas fa-file-pdf"></i> PDF
+                </a>
             </div>
         </form>
         
@@ -529,6 +537,10 @@ include __DIR__ . '/../../includes/header.php';
                    class="btn btn-success btn-sm">
                     <i class="fas fa-file-excel"></i> Export Excel
                 </a>
+                <a href="/simak_app/public/admin/cetak_pdf.php?type=presensi&course_id=<?= $course_id ?>" target="_blank"
+                    class="btn btn-danger btn-sm">
+                    <i class="fas fa-file-pdf"></i> PDF
+                </a>
             </div>
         </form>
         
@@ -628,12 +640,12 @@ include __DIR__ . '/../../includes/header.php';
             <input type="hidden" name="tab" value="mahasiswa">
             
             <div class="form-group" style="margin: 0; min-width: 220px;">
-                <label style="font-size: 13px;">Program Studi</label>
-                <select name="program_studi" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; width: 100%;">
-                    <option value="">-- Semua Program Studi --</option>
+                <label style="font-size: 13px;">Jurusan</label>
+                <select name="jurusan_id" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; width: 100%;">
+                    <option value="">-- Semua Jurusan --</option>
                     <?php foreach ($prodi_list as $p): ?>
-                        <option value="<?= htmlspecialchars($p['program_studi']) ?>" <?= $program_studi == $p['program_studi'] ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($p['program_studi']) ?>
+                        <option value="<?= $p['jurusan_id'] ?>" <?= $jurusan_id == $p['jurusan_id'] ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($p['kode']) ?> - <?= htmlspecialchars($p['program_studi']) ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
@@ -643,9 +655,13 @@ include __DIR__ . '/../../includes/header.php';
                 <button type="submit" class="btn btn-primary btn-sm">
                     <i class="fas fa-search"></i> Filter
                 </button>
-                <a href="?tab=mahasiswa&export=mahasiswa&program_studi=<?= urlencode($program_studi ?? '') ?>" 
+                <a href="?tab=mahasiswa&export=mahasiswa&jurusan_id=<?= urlencode($jurusan_id ?? '') ?>" 
                    class="btn btn-success btn-sm">
                     <i class="fas fa-file-excel"></i> Export Excel
+                </a>
+                <a href="/simak_app/public/admin/cetak_pdf.php?type=mahasiswa&jurusan_id=<?= $jurusan_id ?>" target="_blank"
+                class="btn btn-danger btn-sm">
+                    <i class="fas fa-file-pdf"></i> PDF
                 </a>
             </div>
         </form>

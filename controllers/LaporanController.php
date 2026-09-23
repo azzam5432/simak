@@ -51,10 +51,9 @@ class LaporanController {
     
     public function getProgramStudiList() {
         $stmt = $this->pdo->query("
-            SELECT DISTINCT program_studi 
-            FROM mahasiswa 
-            WHERE program_studi IS NOT NULL AND program_studi != ''
-            ORDER BY program_studi ASC
+            SELECT j.id as jurusan_id, j.kode, j.nama as program_studi 
+            FROM jurusan j
+            ORDER BY j.nama ASC
         ");
         return $stmt->fetchAll();
     }
@@ -76,12 +75,13 @@ class LaporanController {
     public function getLaporanNilai($course_id = null, $semester = null) {
         $sql = "
             SELECT 
-                g.id, m.nim, u.nama as mahasiswa_nama, m.program_studi,
+                g.id, m.nim, u.nama as mahasiswa_nama, j.nama as program_studi,
                 c.kode_mk, c.nama_mk, c.sks, g.semester,
                 g.nilai_tugas, g.nilai_uts, g.nilai_uas, g.nilai_akhir,
                 g.status_verifikasi
             FROM grades g
             JOIN mahasiswa m ON g.mahasiswa_id = m.id
+            LEFT JOIN jurusan j ON m.jurusan_id = j.id
             JOIN users u ON m.user_id = u.id
             JOIN courses c ON g.course_id = c.id
             WHERE 1=1
@@ -143,11 +143,12 @@ class LaporanController {
     public function getLaporanIRS($semester = null, $status = null) {
         $sql = "
             SELECT 
-                i.id, m.nim, u.nama as mahasiswa_nama, m.program_studi,
+                i.id, m.nim, u.nama as mahasiswa_nama, j.nama as program_studi,
                 c.kode_mk, c.nama_mk, c.sks, i.semester, i.status,
                 i.catatan, i.created_at
             FROM irs i
             JOIN mahasiswa m ON i.mahasiswa_id = m.id
+            LEFT JOIN jurusan j ON m.jurusan_id = j.id
             JOIN users u ON m.user_id = u.id
             JOIN courses c ON i.course_id = c.id
             WHERE 1=1
@@ -181,7 +182,7 @@ class LaporanController {
     public function getRekapIRSPerMahasiswa($semester = null) {
         $sql = "
             SELECT 
-                m.nim, u.nama as mahasiswa_nama, m.program_studi,
+                m.nim, u.nama as mahasiswa_nama, j.nama as program_studi,
                 i.semester,
                 COUNT(i.id) as jumlah_mk,
                 SUM(c.sks) as total_sks,
@@ -190,6 +191,7 @@ class LaporanController {
                 SUM(CASE WHEN i.status = 'rejected' THEN 1 ELSE 0 END) as rejected
             FROM irs i
             JOIN mahasiswa m ON i.mahasiswa_id = m.id
+            LEFT JOIN jurusan j ON m.jurusan_id = j.id
             JOIN users u ON m.user_id = u.id
             JOIN courses c ON i.course_id = c.id
             WHERE 1=1
@@ -201,7 +203,7 @@ class LaporanController {
             $params[] = $semester;
         }
         
-        $sql .= " GROUP BY m.id, m.nim, u.nama, m.program_studi, i.semester
+        $sql .= " GROUP BY m.id, m.nim, u.nama, j.nama, i.semester
                   ORDER BY i.semester DESC, m.nim ASC";
         
         $stmt = $this->pdo->prepare($sql);
@@ -277,11 +279,11 @@ class LaporanController {
     // LAPORAN MAHASISWA
     // ============================================
     
-    public function getLaporanMahasiswa($program_studi = null) {
+    public function getLaporanMahasiswa($jurusan_id = null) {
         $sql = "
             SELECT 
                 m.nim, u.nama as mahasiswa_nama, u.email,
-                m.program_studi, m.angkatan, m.semester,
+                j.nama as program_studi, m.tahun_ajaran as angkatan, m.semester,
                 (
                     SELECT ROUND(SUM(
                         CASE 
@@ -304,16 +306,17 @@ class LaporanController {
                 ) as total_sks
             FROM mahasiswa m
             JOIN users u ON m.user_id = u.id
+            LEFT JOIN jurusan j ON m.jurusan_id = j.id
             WHERE 1=1
         ";
         $params = [];
         
-        if ($program_studi) {
-            $sql .= " AND m.program_studi = ?";
-            $params[] = $program_studi;
+        if ($jurusan_id) {
+            $sql .= " AND m.jurusan_id = ?";
+            $params[] = $jurusan_id;
         }
         
-        $sql .= " ORDER BY m.program_studi ASC, m.nim ASC";
+        $sql .= " ORDER BY j.nama ASC, m.nim ASC";
         
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
